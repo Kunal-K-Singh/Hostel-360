@@ -56,7 +56,7 @@ To reset your entire Google Sheet database and seed **120 realistic applicants +
   - Upon your live submission, total applications counter becomes **120** (60 Boys + 60 Girls).
   - **40 Boys Allotted** (20 Shivalik + 20 Aravali) | **20 Boys Waitlisted**
   - **40 Girls Allotted** (20 Satpura + 20 Nilgiri) | **20 Girls Waitlisted**
-  - **`mrg7216@gmail.com`** (Mohit Gupta, Group 2 OD Jaipur 270 km) is **Allotted Room 101 in Shivalik Hostel**, triggering an automated live email to your inbox!
+  - **`mrg7216@gmail.com`** (Mohit Gupta, Group 2 OD Bengaluru 2,150 km) is **Allotted Room 101 in Shivalik Hostel**, triggering an automated live email to your inbox!
   - **`aarav.sharma2@hostel360.test`** (Aarav Sharma, Group 5 Local Delhi-NCR 18 km) is deterministically placed on the **Waitlist**, allowing you to showcase both Allotment and Waitlist portals!
 
 ---
