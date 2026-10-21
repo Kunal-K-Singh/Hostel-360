@@ -40,7 +40,7 @@ Step 5: Student Digital Allotment Letter & Payment
 ### Step 1: Student Application & Document Submission
 
 1. **Access Student Portal:**
-   - Open the Web App deployment link.
+   - Open the Web App deployment link: [https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec](https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec)
    - Click **🎓 Student Portal** and sign in using `student.demo@hostel360.test` / `Student@123`.
 2. **Review Profile & Choose Preferences:**
    - The application pre-fills Aarav Sharma's details (Outstation applicant from Jaipur, 270 km from Dwarka campus).

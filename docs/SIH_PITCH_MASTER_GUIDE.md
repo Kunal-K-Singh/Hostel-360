@@ -249,6 +249,9 @@ The allocation engine processes Boys and Girls pools with **strict gender isolat
 
 # 10. LIVE DEMO STEP-BY-STEP CHEAT SHEET
 
+> 🌐 **Live Web App Deployment:**  
+> [https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec](https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec)
+
 ### 🔑 Credentials Quick Reference
 * **Student Portal Login**: `mrg7216@gmail.com` | Password: `Student@123`
 * **Waitlist Demo Student**: `aarav.sharma2@hostel360.test` | Password: `Student@123`

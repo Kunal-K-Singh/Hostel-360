@@ -10,6 +10,15 @@
 
 ---
 
+### 🌐 Live Production Deployment
+[![Live Web App](https://img.shields.io/badge/Live%20Demo-Launch%20HOSTEL%20360%20Web%20App-E37400?style=for-the-badge&logo=googlechrome&logoColor=white)](https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec)
+
+> 🚀 **Live Interactive Web App:**  
+> **[https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec](https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec)**  
+> *(Fully functional live instance running on Google Workspace V8 runtime with the 120-student benchmark cohort. See [Demo Credentials](#-demo-credentials--live-app) to test).*
+
+---
+
 ## 📌 Executive Summary
 
 Every academic semester, thousands of outstation students navigate uncertainty while university administrations struggle with paper forms, ad-hoc spreadsheets, discretionary quotas, and days of manual counseling.
@@ -277,7 +286,9 @@ npm run open
 
 ---
 
-## 🔑 Demo Credentials
+## 🔑 Demo Credentials & Live App
+
+> 🌐 **Live Web App:** [https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec](https://script.google.com/macros/s/AKfycbz2gqdNf-fevMecr7wx91fgggoFDJ3otrjxAo57F2X6i0Wqd7iMIPoB2tkB3VPTtgJtzw/exec)
 
 | Role | Email | Password | Details |
 | :--- | :--- | :--- | :--- |
