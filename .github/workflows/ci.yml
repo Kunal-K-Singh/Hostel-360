@@ -1,0 +1,66 @@
+name: CI Quality & Validation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Code & Manifest Integrity
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Verify JSON Validity
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('appsscript.json'))"
+          node -e "JSON.parse(require('fs').readFileSync('package.json'))"
+          node -e "JSON.parse(require('fs').readFileSync('.clasp.json.example'))"
+          echo "All JSON configuration files are syntactically valid."
+
+      - name: Verify Sensitive Credentials Are Not Committed
+        run: |
+          if [ -f ".clasp.json" ]; then
+            echo "ERROR: .clasp.json found in git tree! Do not commit private script IDs."
+            exit 1
+          fi
+          if [ -f ".clasprc.json" ]; then
+            echo "ERROR: .clasprc.json found in git tree! Do not commit private credentials."
+            exit 1
+          fi
+          echo "No private clasp or auth artifacts detected."
+
+      - name: Verify Core Architecture Files Exist
+        run: |
+          REQUIRED_FILES=(
+            "Code.gs"
+            "AllocationEngine.gs"
+            "SheetRepository.gs"
+            "AuthService.gs"
+            "SessionService.gs"
+            "EligibilityEngine.gs"
+            "PriorityEngine.gs"
+            "ReservationEngine.gs"
+            "AllocationValidator.gs"
+            "TestRunner.gs"
+            "Index.html"
+            "StudentDashboard.html"
+            "WardenDashboard.html"
+            "appsscript.json"
+          )
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Missing required architecture component: $file"
+              exit 1
+            fi
+          done
+          echo "All 14 core system architectural components verified."
