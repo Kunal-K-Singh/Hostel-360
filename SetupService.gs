@@ -347,9 +347,10 @@ var SetupService = (function () {
 
     // Note: Application record for mrg7216@gmail.com is NOT inserted here so you can submit it LIVE in the demo as applicant #120!
 
-    // Seed pre-verified documents for hero student so upon submission it is immediately verified & eligible
+    // Seed documents for hero student: 4 pre-verified, 1 document (Student Undertaking) uploaded pending review for live Warden audit demo
     var heroDocs = ['ADMISSION_FEE_RECEIPT', 'MEDICAL_FITNESS', 'PERMANENT_ADDRESS_PROOF', 'PARENT_UNDERTAKING', 'STUDENT_UNDERTAKING'];
     var heroDocsBatch = heroDocs.map(function (dt, idx) {
+      var isPendingDoc = (dt === 'STUDENT_UNDERTAKING');
       return {
         DocumentID: 'DOC_' + heroStudentId + '_' + idx,
         ApplicationID: heroAppId,
@@ -358,10 +359,10 @@ var SetupService = (function () {
         DriveFileID: 'demo_file_' + heroStudentId + '_' + idx,
         DriveURL: 'https://drive.google.com',
         UploadedAt: nowIso,
-        VerificationStatus: 'VERIFIED',
-        VerifiedBy: 'warden.demo@hostel360.test',
-        VerifiedAt: nowIso,
-        Remarks: 'Pre-verified for demo presentation'
+        VerificationStatus: isPendingDoc ? 'PENDING' : 'VERIFIED',
+        VerifiedBy: isPendingDoc ? '' : 'warden.demo@hostel360.test',
+        VerifiedAt: isPendingDoc ? '' : nowIso,
+        Remarks: isPendingDoc ? 'Uploaded' : 'Pre-verified for demo presentation'
       };
     });
     SheetRepository.batchInsertRecords(SheetRepository.SHEETS.DOCUMENTS, heroDocsBatch);
