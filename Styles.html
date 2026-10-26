@@ -1102,32 +1102,559 @@
     }
   }
 
-  /* SMRITI ADVISORY INSTITUTIONAL MEMORY */
+  /* SMRITI ADVISORY INSTITUTIONAL MEMORY - MODERN LLM INTERFACE */
+  .smriti-llm-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+    height: 72vh;
+    max-height: 840px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  /* Header */
+  .smriti-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .smriti-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .smriti-avatar-brand {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    box-shadow: 0 3px 8px rgba(79, 70, 229, 0.25);
+    flex-shrink: 0;
+  }
+
+  .smriti-status-pulse {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #10b981;
+    border: 2px solid var(--bg-card);
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
+  }
+
+  .smriti-brand-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.2px;
+  }
+
+  .smriti-version-pill {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(79, 70, 229, 0.2);
+  }
+
+  .smriti-brand-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .smriti-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .smriti-advisory-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--warning-light);
+    color: var(--warning);
+    border: 1px solid rgba(217, 119, 6, 0.25);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .smriti-header-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    font-size: 11.5px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .smriti-header-btn:hover {
+    background-color: var(--border);
+    color: var(--primary);
+  }
+
+  /* Chat Conversation Feed */
+  .smriti-chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scroll-behavior: smooth;
+    background-color: var(--bg-main);
+  }
+
+  /* Message Rows */
+  .smriti-msg-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    animation: smritiFadeIn 0.22s ease-out;
+  }
+
+  @keyframes smritiFadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .smriti-msg-assistant {
+    align-self: flex-start;
+  }
+
+  .smriti-msg-user {
+    align-self: flex-end;
+    justify-content: flex-end;
+  }
+
+  .smriti-msg-avatar {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+
+  .smriti-avatar-gradient {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+  }
+
+  .smriti-avatar-gradient.smriti-avatar-pulse {
+    animation: smritiPulseGlow 1.4s infinite;
+  }
+
+  @keyframes smritiPulseGlow {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.5); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 7px rgba(79, 70, 229, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+  }
+
+  .smriti-avatar-user {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: var(--text-main);
+  }
+
+  /* Assistant Message Bubble */
+  .smriti-msg-bubble {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px 16px 16px 16px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+    max-width: 82%;
+    min-width: 220px;
+  }
+
+  .smriti-msg-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 11.5px;
+  }
+
+  .smriti-author-name {
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .smriti-author-role {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .smriti-msg-content {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-main);
+    word-break: break-word;
+  }
+
+  /* User Message Bubble */
+  .smriti-user-bubble {
+    background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+    color: #ffffff;
+    border-radius: 16px 4px 16px 16px;
+    padding: 11px 16px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    max-width: 75%;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.18);
+    word-break: break-word;
+  }
+
+  /* Thinking Animation */
+  .smriti-thinking-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+
+  .smriti-thinking-dots {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .smriti-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    opacity: 0.4;
+    animation: smritiBounce 1.4s infinite ease-in-out both;
+  }
+
+  .smriti-dot:nth-child(1) { animation-delay: -0.32s; }
+  .smriti-dot:nth-child(2) { animation-delay: -0.16s; }
+  .smriti-dot:nth-child(3) { animation-delay: 0s; }
+
+  @keyframes smritiBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+    40% { transform: scale(1.1); opacity: 1; }
+  }
+
+  .smriti-thinking-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-left: 6px;
+  }
+
+  /* Markdown Rendering Inside Smriti Message */
+  .smriti-md-h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 12px 0 6px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .smriti-md-h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 10px 0 4px 0;
+  }
+  .smriti-md-h4 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 10px 0 4px 0;
+  }
+  .smriti-md-p {
+    margin: 4px 0;
+    color: var(--text-main);
+  }
+  .smriti-md-gap {
+    height: 6px;
+  }
+  .smriti-md-ul, .smriti-md-ol {
+    margin: 6px 0 6px 20px;
+    padding-left: 4px;
+  }
+  .smriti-md-ul li, .smriti-md-ol li {
+    margin: 4px 0;
+    line-height: 1.55;
+  }
+  .smriti-md-code {
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+  }
+  .smriti-md-pre {
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+    font-size: 12px;
+  }
+  .smriti-md-blockquote {
+    border-left: 3px solid var(--primary);
+    padding: 4px 12px;
+    margin: 8px 0;
+    background-color: var(--bg-subtle);
+    border-radius: 0 6px 6px 0;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  .smriti-md-hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 12px 0;
+  }
+
+  /* Callout & Footer Actions */
+  .smriti-callout-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: rgba(79, 70, 229, 0.05);
+    border: 1px solid rgba(79, 70, 229, 0.15);
+    border-radius: 8px;
+    padding: 9px 13px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .smriti-msg-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .smriti-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 10.5px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .smriti-copy-btn:hover {
+    background-color: var(--bg-subtle);
+    color: var(--text-main);
+    border-color: var(--border-hover);
+  }
+
+  .smriti-source-tag {
+    font-size: 10.5px;
+    opacity: 0.8;
+  }
+
+  /* Bottom Dock: Chips + Input Bar */
+  .smriti-bottom-dock {
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 12px 20px 14px 20px;
+    flex-shrink: 0;
+  }
+
+  /* Suggested Precedent Queries (Just Above Chat Box) */
+  .smriti-chips-section {
+    margin-bottom: 10px;
+  }
+
+  .smriti-chips-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
   .smriti-chips-container {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 12px;
   }
 
   .smriti-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     background-color: var(--bg-subtle);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 6px 12px;
+    border-radius: 18px;
+    padding: 5px 12px;
     font-size: 12px;
+    font-weight: 500;
     color: var(--text-main);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     text-align: left;
   }
 
   .smriti-chip:hover {
-    background-color: var(--border);
+    background-color: var(--bg-card);
     border-color: var(--primary);
     color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
   }
 
+  /* Modern LLM Input Capsule */
+  .smriti-input-capsule {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 10px 7px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .smriti-input-capsule:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  .smriti-prompt-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    resize: none;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text-main);
+    max-height: 120px;
+    min-height: 24px;
+    padding: 4px 0;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+
+  .smriti-prompt-input::placeholder {
+    color: var(--text-light);
+  }
+
+  .smriti-send-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+    margin-bottom: 1px;
+  }
+
+  .smriti-send-action-btn:hover {
+    background: var(--primary-hover);
+    transform: scale(1.05);
+  }
+
+  .smriti-send-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .smriti-disclaimer-note {
+    font-size: 11px;
+    color: var(--text-light);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .smriti-error-banner {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    color: var(--danger);
+    font-size: 12px;
+  }
+
+  /* Backward Compatibility Styles */
   .smriti-chat-box {
     background-color: var(--bg-subtle);
     border: 1px solid var(--border);
@@ -1141,58 +1668,26 @@
     gap: 12px;
     margin-bottom: 14px;
   }
-
-  .smriti-msg {
-    display: flex;
-    gap: 10px;
-    max-width: 85%;
-  }
-
-  .smriti-msg-assistant {
-    align-self: flex-start;
-  }
-
-  .smriti-msg-user {
-    align-self: flex-end;
-    flex-direction: row-reverse;
-  }
-
+  .smriti-msg { display: flex; gap: 10px; max-width: 85%; }
+  .smriti-msg-assistant { align-self: flex-start; }
+  .smriti-msg-user { align-self: flex-end; }
   .smriti-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
+    width: 32px; height: 32px; border-radius: 50%;
+    background-color: var(--bg-card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
   }
-
   .smriti-bubble {
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 13px;
-    line-height: 1.5;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border);
-    color: var(--text-main);
-    white-space: pre-wrap;
+    padding: 10px 14px; border-radius: 10px; font-size: 13px;
+    line-height: 1.5; background-color: var(--bg-card);
+    border: 1px solid var(--border); color: var(--text-main);
   }
-
   .smriti-msg-user .smriti-bubble {
-    background-color: var(--primary);
-    color: #ffffff;
-    border-color: var(--primary);
+    background-color: var(--primary); color: #ffffff; border-color: var(--primary);
   }
+  .smriti-input-bar { display: flex; gap: 10px; align-items: center; }
 
-  .smriti-input-bar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-
+  /* OVERRIDE & BRIEFING CARDS */
   .smriti-advisory-card {
     background-color: var(--bg-subtle);
     border: 1px solid var(--border);

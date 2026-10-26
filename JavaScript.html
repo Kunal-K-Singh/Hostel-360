@@ -960,6 +960,13 @@ var App = {
     var targetBtn = document.getElementById('btn-tab-' + tabName);
     if (targetTab) targetTab.classList.add('active');
     if (targetBtn) targetBtn.classList.add('active');
+
+    if (tabName === 'smriti') {
+      var hist = document.getElementById('smriti-chat-history');
+      if (hist) hist.scrollTop = hist.scrollHeight;
+      var input = document.getElementById('smriti-chat-input');
+      if (input) setTimeout(function () { input.focus(); }, 100);
+    }
   },
 
   renderWardenCharts: function (analytics) {
@@ -1021,6 +1028,105 @@ var App = {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  },
+
+  formatMarkdownInline: function (text) {
+    if (!text) return '';
+    // Bold: **text**
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Italic: *text* (avoiding double stars)
+    text = text.replace(/(^|[^\*])\*([^\*]+)\*([^\*]|$)/g, '$1<em>$2</em>$3');
+    // Inline code: `text`
+    text = text.replace(/`([^`]+)`/g, '<code class="smriti-md-code">$1</code>');
+    return text;
+  },
+
+  renderMarkdown: function (md) {
+    if (!md) return '';
+    var safe = this.escapeHtml(md);
+
+    var lines = safe.split(/\r?\n/);
+    var out = [];
+    var inUl = false;
+    var inOl = false;
+    var inCode = false;
+    var codeBuf = [];
+    var self = this;
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+
+      // Code blocks ```
+      if (line.trim().indexOf('```') === 0) {
+        if (inCode) {
+          out.push('<pre class="smriti-md-pre"><code>' + codeBuf.join('\n') + '</code></pre>');
+          codeBuf = [];
+          inCode = false;
+        } else {
+          if (inUl) { out.push('</ul>'); inUl = false; }
+          if (inOl) { out.push('</ol>'); inOl = false; }
+          inCode = true;
+        }
+        continue;
+      }
+      if (inCode) {
+        codeBuf.push(line);
+        continue;
+      }
+
+      var ulMatch = line.match(/^(\s*)[*-]\s+(.*)$/);
+      var olMatch = line.match(/^(\s*)\d+\.\s+(.*)$/);
+      var h3Match = line.match(/^###\s+(.*)$/);
+      var h2Match = line.match(/^##\s+(.*)$/);
+      var h1Match = line.match(/^#\s+(.*)$/);
+      var bqMatch = line.match(/^>\s+(.*)$/);
+
+      if (ulMatch) {
+        if (inOl) { out.push('</ol>'); inOl = false; }
+        if (!inUl) { out.push('<ul class="smriti-md-ul">'); inUl = true; }
+        out.push('<li>' + self.formatMarkdownInline(ulMatch[2]) + '</li>');
+        continue;
+      } else if (inUl) {
+        out.push('</ul>');
+        inUl = false;
+      }
+
+      if (olMatch) {
+        if (inUl) { out.push('</ul>'); inUl = false; }
+        if (!inOl) { out.push('<ol class="smriti-md-ol">'); inOl = true; }
+        out.push('<li>' + self.formatMarkdownInline(olMatch[2]) + '</li>');
+        continue;
+      } else if (inOl) {
+        out.push('</ol>');
+        inOl = false;
+      }
+
+      if (bqMatch) {
+        out.push('<blockquote class="smriti-md-blockquote">' + self.formatMarkdownInline(bqMatch[1]) + '</blockquote>');
+      } else if (h3Match) {
+        out.push('<h4 class="smriti-md-h4">' + self.formatMarkdownInline(h3Match[1]) + '</h4>');
+      } else if (h2Match) {
+        out.push('<h3 class="smriti-md-h3">' + self.formatMarkdownInline(h2Match[1]) + '</h3>');
+      } else if (h1Match) {
+        out.push('<h2 class="smriti-md-h2">' + self.formatMarkdownInline(h1Match[1]) + '</h2>');
+      } else if (line.trim() === '---' || line.trim() === '***') {
+        out.push('<hr class="smriti-md-hr"/>');
+      } else if (line.trim() === '') {
+        if (out.length > 0 && out[out.length - 1] !== '<div class="smriti-md-gap"></div>') {
+          out.push('<div class="smriti-md-gap"></div>');
+        }
+      } else {
+        out.push('<p class="smriti-md-p">' + self.formatMarkdownInline(line) + '</p>');
+      }
+    }
+
+    if (inCode) {
+      out.push('<pre class="smriti-md-pre"><code>' + codeBuf.join('\n') + '</code></pre>');
+    }
+    if (inUl) out.push('</ul>');
+    if (inOl) out.push('</ol>');
+
+    return out.join('');
   },
 
   renderPaginationBar: function (containerId, currentPage, totalItems, pageSize, onPageChangeName) {
@@ -1777,7 +1883,7 @@ var App = {
 
         var html = '';
         res.cases.forEach(function (c) {
-          html += '<div class="smriti-case-item">• ' + App.escapeHtml(c.content) + '</div>';
+          html += '<div class="smriti-case-item">⚖️ ' + App.renderMarkdown(c.content) + '</div>';
         });
         container.innerHTML = html;
       })
@@ -2518,20 +2624,108 @@ var App = {
   },
 
   // ============================================================
-  // SMRITI ADVISORY INSTITUTIONAL MEMORY CONTROLLER
+  // SMRITI ADVISORY INSTITUTIONAL MEMORY CONTROLLER (MODERN LLM)
   // ============================================================
+
+  getSmritiWelcomeHtml: function () {
+    return '<div class="smriti-msg-row smriti-msg-assistant">' +
+      '<div class="smriti-msg-avatar">' +
+      '<div class="smriti-avatar-gradient">🧠</div>' +
+      '</div>' +
+      '<div class="smriti-msg-bubble">' +
+      '<div class="smriti-msg-author">' +
+      '<span class="smriti-author-name">Smriti</span>' +
+      '<span class="smriti-author-role">Hindsight Memory</span>' +
+      '</div>' +
+      '<div class="smriti-msg-content">' +
+      '<p><strong>Welcome to Smriti.</strong> I am your advisory institutional memory assistant powered by Hindsight agent memory.</p>' +
+      '<div class="smriti-md-gap"></div>' +
+      '<p>I recall past manual override justifications, document rejection patterns, waitlist promotion timelines, and quota release precedents from historical cycles (2024-25 &amp; 2025-26).</p>' +
+      '<div class="smriti-callout-note">' +
+      '<span>💡</span>' +
+      '<span>Click any suggested precedent query below or type your question in the chat box to reflect on historical cases.</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="smriti-msg-actions">' +
+      '<button type="button" class="smriti-copy-btn" onclick="App.copySmritiResponse(this)" title="Copy response">' +
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+      '<span>Copy</span>' +
+      '</button>' +
+      '<span class="smriti-source-tag">Institutional Memory Bank (2024-25, 2025-26)</span>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+  },
+
+  clearSmritiChat: function () {
+    var history = document.getElementById('smriti-chat-history');
+    if (history) history.innerHTML = this.getSmritiWelcomeHtml();
+    var input = document.getElementById('smriti-chat-input');
+    if (input) {
+      input.value = '';
+      this.autoGrowSmritiInput(input);
+      input.focus();
+    }
+  },
+
+  handleSmritiKey: function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      this.submitSmritiQuestion();
+    }
+  },
+
+  autoGrowSmritiInput: function (el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  },
+
+  copySmritiResponse: function (btn, text) {
+    if (!text && btn) {
+      var parentBubble = btn.closest('.smriti-msg-bubble');
+      if (parentBubble) {
+        var contentEl = parentBubble.querySelector('.smriti-msg-content');
+        if (contentEl) text = contentEl.innerText || contentEl.textContent;
+      }
+    }
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    if (btn) {
+      var oldHtml = btn.innerHTML;
+      btn.innerHTML = '<span style="color:var(--success); font-weight:600;">✓ Copied</span>';
+      setTimeout(function () {
+        btn.innerHTML = oldHtml;
+      }, 2000);
+    }
+  },
 
   askSmritiFromChip: function (question) {
     var input = document.getElementById('smriti-chat-input');
-    if (input) input.value = question;
+    if (input) {
+      input.value = question;
+      this.autoGrowSmritiInput(input);
+    }
     this.submitSmritiQuestion();
   },
 
   submitSmritiQuestion: function () {
     var input = document.getElementById('smriti-chat-input');
     var sendBtn = document.getElementById('btn-smriti-send');
-    var sendLabel = document.getElementById('smriti-send-label');
+    var sendIcon = document.getElementById('smriti-send-icon');
     var sendSpinner = document.getElementById('smriti-send-spinner');
+    var sendLabel = document.getElementById('smriti-send-label');
     var errBanner = document.getElementById('smriti-error-banner');
     var history = document.getElementById('smriti-chat-history');
 
@@ -2542,24 +2736,42 @@ var App = {
     if (errBanner) errBanner.style.display = 'none';
 
     // 1. Append User Message
-    var userMsgHtml = '<div class="smriti-msg smriti-msg-user">' +
-      '<div class="smriti-avatar">👤</div>' +
-      '<div class="smriti-bubble">' + App.escapeHtml(question) + '</div>' +
+    var userMsgHtml = '<div class="smriti-msg-row smriti-msg-user">' +
+      '<div class="smriti-user-bubble">' + App.escapeHtml(question) + '</div>' +
+      '<div class="smriti-msg-avatar">' +
+      '<div class="smriti-avatar-user">👤</div>' +
+      '</div>' +
       '</div>';
     history.innerHTML += userMsgHtml;
     input.value = '';
+    this.autoGrowSmritiInput(input);
 
     // 2. Append Pending Assistant Bubble
     var tempMsgId = 'smriti-loading-' + Date.now();
-    var pendingMsgHtml = '<div id="' + tempMsgId + '" class="smriti-msg smriti-msg-assistant">' +
-      '<div class="smriti-avatar">🧠</div>' +
-      '<div class="smriti-bubble" style="display:flex; align-items:center; gap:8px;">' +
-      '<span class="spinner" style="width:14px; height:14px; border-width:2px;"></span> Reflecting over institutional memory...' +
-      '</div></div>';
+    var pendingMsgHtml = '<div id="' + tempMsgId + '" class="smriti-msg-row smriti-msg-assistant">' +
+      '<div class="smriti-msg-avatar">' +
+      '<div class="smriti-avatar-gradient smriti-avatar-pulse">🧠</div>' +
+      '</div>' +
+      '<div class="smriti-msg-bubble">' +
+      '<div class="smriti-msg-author">' +
+      '<span class="smriti-author-name">Smriti</span>' +
+      '<span class="smriti-author-role">Reflecting...</span>' +
+      '</div>' +
+      '<div class="smriti-thinking-row">' +
+      '<div class="smriti-thinking-dots">' +
+      '<div class="smriti-dot"></div>' +
+      '<div class="smriti-dot"></div>' +
+      '<div class="smriti-dot"></div>' +
+      '</div>' +
+      '<span class="smriti-thinking-text">Reflecting over institutional memory banks...</span>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
     history.innerHTML += pendingMsgHtml;
     history.scrollTop = history.scrollHeight;
 
     if (sendBtn) sendBtn.disabled = true;
+    if (sendIcon) sendIcon.style.display = 'none';
     if (sendSpinner) sendSpinner.style.display = 'inline-block';
     if (sendLabel) sendLabel.textContent = 'Thinking...';
 
@@ -2567,27 +2779,54 @@ var App = {
     this.callServer('apiSmritiAsk', this.token, question)
       .then(function (res) {
         if (sendBtn) sendBtn.disabled = false;
+        if (sendIcon) sendIcon.style.display = 'inline-block';
         if (sendSpinner) sendSpinner.style.display = 'none';
         if (sendLabel) sendLabel.textContent = 'Ask Smriti';
 
         var tempEl = document.getElementById(tempMsgId);
         var answer = (res && res.answer) ? res.answer : 'No answer returned from institutional memory.';
         if (tempEl) {
-          tempEl.innerHTML = '<div class="smriti-avatar">🧠</div>' +
-            '<div class="smriti-bubble">' + App.escapeHtml(answer) + '</div>';
+          tempEl.innerHTML = '<div class="smriti-msg-avatar">' +
+            '<div class="smriti-avatar-gradient">🧠</div>' +
+            '</div>' +
+            '<div class="smriti-msg-bubble">' +
+            '<div class="smriti-msg-author">' +
+            '<span class="smriti-author-name">Smriti</span>' +
+            '<span class="smriti-author-role">Hindsight Memory</span>' +
+            '</div>' +
+            '<div class="smriti-msg-content">' + App.renderMarkdown(answer) + '</div>' +
+            '<div class="smriti-msg-actions">' +
+            '<button type="button" class="smriti-copy-btn" onclick="App.copySmritiResponse(this)" title="Copy response">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+            '<span>Copy</span>' +
+            '</button>' +
+            '<span class="smriti-source-tag">Institutional Memory Bank (2024-25, 2025-26)</span>' +
+            '</div>' +
+            '</div>';
         }
         history.scrollTop = history.scrollHeight;
       })
       .catch(function () {
         if (sendBtn) sendBtn.disabled = false;
+        if (sendIcon) sendIcon.style.display = 'inline-block';
         if (sendSpinner) sendSpinner.style.display = 'none';
         if (sendLabel) sendLabel.textContent = 'Ask Smriti';
 
         var tempEl = document.getElementById(tempMsgId);
-        var friendlyErr = 'Smriti is currently unconfigured or operating in offline mode. Please configure Hindsight API credentials via smritiSetConfig() to enable AI-powered institutional recall.';
+        var friendlyErr = 'Smriti is currently operating in offline mode. Please configure Hindsight API credentials via smritiSetConfig() to enable AI-powered institutional recall.';
         if (tempEl) {
-          tempEl.innerHTML = '<div class="smriti-avatar">🧠</div>' +
-            '<div class="smriti-bubble" style="color:var(--text-muted); font-style:italic;">' + App.escapeHtml(friendlyErr) + '</div>';
+          tempEl.innerHTML = '<div class="smriti-msg-avatar">' +
+            '<div class="smriti-avatar-gradient">🧠</div>' +
+            '</div>' +
+            '<div class="smriti-msg-bubble">' +
+            '<div class="smriti-msg-author">' +
+            '<span class="smriti-author-name">Smriti</span>' +
+            '<span class="smriti-author-role">System Notice</span>' +
+            '</div>' +
+            '<div class="smriti-msg-content" style="color:var(--text-muted); font-style:italic;">' +
+            App.renderMarkdown(friendlyErr) +
+            '</div>' +
+            '</div>';
         }
         history.scrollTop = history.scrollHeight;
       });
@@ -2604,7 +2843,7 @@ var App = {
     this.callServer('apiSmritiPrePublishBriefing', this.token)
       .then(function (res) {
         var briefing = (res && res.briefing) ? res.briefing : 'Smriti advisory memory is offline.';
-        content.innerHTML = App.escapeHtml(briefing);
+        content.innerHTML = App.renderMarkdown(briefing);
       })
       .catch(function () {
         content.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">Smriti briefing unavailable (offline mode). Allocation engine validation remains fully verified.</span>';
