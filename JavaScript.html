@@ -255,19 +255,55 @@ var App = {
     document.getElementById('stu-display-category').textContent = student.Category || 'GENERAL';
 
     // 2. Timeline Step Rendering (8 Stages)
-    var step = data.analytics ? data.analytics.timelineStep : 1;
+    var step = 1;
 
-    // Check if all required documents for this student are verified:
-    var requiredDocList = data.requiredDocs || data.mandatoryDocs || [];
-    if (data.documents && requiredDocList.length > 0) {
-      var dMap = {};
-      data.documents.forEach(function (d) { dMap[d.DocumentType] = d; });
-      var allVerified = requiredDocList.every(function (dt) {
-        return dMap[dt] && String(dMap[dt].VerificationStatus).toUpperCase() === 'VERIFIED';
-      });
-      // If all required documents are verified, Step 3 (Doc Verification) MUST show completed (✓)
-      if (allVerified && step < 4) {
-        step = 4; // Moves active step to 4 (Allocation), so Step 1, 2, 3 show green ticks ✓
+    // Check if an application has actually been submitted:
+    var hasSubmittedApp = data.application && data.application.ApplicationID &&
+      (data.application.Status === 'SUBMITTED' || data.application.Status === 'VERIFIED');
+
+    if (!hasSubmittedApp) {
+      // Stage 1: Application submission pending (active circle 1, no green ticks)
+      step = 1;
+    } else {
+      // Application IS submitted -> At least Stage 2 (Submitted shows green tick ✓)
+      step = 2;
+
+      // Check if Eligibility is determined
+      if (data.application.EligibilityStatus === 'ELIGIBLE') {
+        step = 3; // Eligibility confirmed (✓), Stage 3 Doc Verification active
+
+        // Check if all category-required documents are verified:
+        var requiredDocList = data.requiredDocs || data.mandatoryDocs || [];
+        if (data.documents && requiredDocList.length > 0) {
+          var dMap = {};
+          data.documents.forEach(function (d) { dMap[d.DocumentType] = d; });
+          var allVerified = requiredDocList.every(function (dt) {
+            return dMap[dt] && String(dMap[dt].VerificationStatus).toUpperCase() === 'VERIFIED';
+          });
+          // If all required documents are verified for a submitted application, Step 3 (Doc Verification) is completed (✓)
+          if (allVerified) {
+            step = 4; // Advances to Step 4 (Allocation), so Steps 1, 2, 3 show green ticks ✓
+          }
+        }
+      }
+
+      // Check for Draft Allocation in review
+      if (data.analytics && data.analytics.timelineStep >= 5) {
+        step = data.analytics.timelineStep;
+      }
+
+      // Check for Published Allocation / Fee Payment / Physical Registration
+      if (data.allocation && data.allocation.status === 'PUBLISHED') {
+        var isRegistered = (data.allocation.registrationStatus === 'COMPLETED');
+        var hasVerifiedPayment = (data.payments || []).some(function (p) { return p.Status === 'VERIFIED'; });
+
+        if (isRegistered) {
+          step = 9; // All 8 stages completed with green checkmarks ✓!
+        } else if (hasVerifiedPayment) {
+          step = 8; // Fee verified -> Stage 8: Physical Registration & Key Handover active
+        } else {
+          step = 7; // Published -> Stage 7: Fee Payment active (3-day countdown)
+        }
       }
     }
 
@@ -382,6 +418,15 @@ var App = {
         '<span class="badge badge-warning">WAITLISTED</span>' +
         '</div>' +
         '<p style="font-size:13px; margin:10px 0; color:var(--text-muted);">' + data.waitlist.explanation + '</p>' +
+        '</div>';
+    } else if (!hasSubmittedApp) {
+      if (letterBtn) letterBtn.style.display = 'none';
+      allocContainer.innerHTML =
+        '<div class="card" style="text-align:center; padding:28px 20px; border:2px dashed var(--primary); background:rgba(37,99,235,0.03);">' +
+        '<div style="font-size:32px; margin-bottom:8px;">📝</div>' +
+        '<h4 style="color:var(--text-main); margin-bottom:6px;">Stage 1: Application Submission Pending</h4>' +
+        '<p style="font-size:13px; color:var(--text-muted); max-width:550px; margin:0 auto 16px auto;">Please review your student profile details, select your preferred hostels in the form below, and click <strong>Submit Application</strong> to begin your allotment lifecycle.</p>' +
+        '<button type="button" class="btn btn-primary btn-sm" onclick="App.switchStudentTab(\'application\'); document.getElementById(\'app-pref-1\').focus();">Proceed to Application Form ↓</button>' +
         '</div>';
     } else {
       if (letterBtn) letterBtn.style.display = 'none';
