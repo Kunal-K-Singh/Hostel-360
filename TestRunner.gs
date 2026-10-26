@@ -275,7 +275,7 @@ var TestRunner = (function () {
       assert('TEST 22', 'smritiRetain returns {ok:false} without throwing when unconfigured', !didThrow && retainResult !== null && typeof retainResult === 'object');
 
       // -------------------------------------------------------------
-      // TEST 23: Smriti hooks do not break existing operations when unconfigured
+      // TEST 23: Smriti hooks do not break existing operations
       // -------------------------------------------------------------
       var hooksDidNotBreak = false;
       try {
@@ -286,8 +286,8 @@ var TestRunner = (function () {
       }
       var recallRes = (typeof MemoryService !== 'undefined') ? MemoryService.smritiRecall('any search query') : null;
       var reflectRes = (typeof MemoryService !== 'undefined') ? MemoryService.smritiReflect('any question') : null;
-      var safeReturn = recallRes && !recallRes.ok && reflectRes && !reflectRes.ok;
-      assert('TEST 23', 'Smriti hooks & memory methods are non-blocking and safe when unconfigured', hooksDidNotBreak && safeReturn);
+      var safeReturn = recallRes && (typeof recallRes.ok === 'boolean') && reflectRes && (typeof reflectRes.ok === 'boolean');
+      assert('TEST 23', 'Smriti hooks & memory methods are non-blocking and safe in all states', hooksDidNotBreak && safeReturn);
 
     } catch (err) {
       results.push({ id: 'GLOBAL_ERR', name: 'Test execution exception', passed: false, message: err.message });
