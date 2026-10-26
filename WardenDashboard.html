@@ -120,11 +120,20 @@
   <div id="w-tab-applications" class="tab-pane warden-tab">
     <div class="card">
       <div class="card-header" style="flex-wrap:wrap; gap:10px;">
-        <div class="card-title">Student Applications Master List</div>
+        <div>
+          <div class="card-title">Student Applications Master List</div>
+          <div class="card-subtitle">Review applications, verify uploaded documents, and track eligibility</div>
+        </div>
+      </div>
+      <div class="table-toolbar">
         <div class="subtabs-nav" style="margin-bottom:0;">
           <button id="subtab-apps-ALL" class="subtab-btn active" onclick="App.filterWardenApplications('ALL')">All Applicants (<span id="count-apps-ALL">0</span>)</button>
           <button id="subtab-apps-MALE" class="subtab-btn" onclick="App.filterWardenApplications('MALE')">👨 BOYS (<span id="count-apps-MALE">0</span>)</button>
           <button id="subtab-apps-FEMALE" class="subtab-btn" onclick="App.filterWardenApplications('FEMALE')">👩 GIRLS (<span id="count-apps-FEMALE">0</span>)</button>
+        </div>
+        <div class="table-search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-warden-apps" placeholder="Search applicant, roll no, category..." oninput="App.searchWardenApplications(this.value)">
         </div>
       </div>
       <div class="table-responsive">
@@ -144,6 +153,7 @@
           <tbody id="warden-apps-tbody"></tbody>
         </table>
       </div>
+      <div id="pagination-apps" class="pagination-container"></div>
     </div>
   </div>
 
@@ -163,11 +173,15 @@
         </div>
       </div>
 
-      <div style="margin-bottom:14px;">
+      <div class="table-toolbar">
         <div class="subtabs-nav" style="margin-bottom:0;">
           <button id="subtab-alloc-ALL" class="subtab-btn active" onclick="App.filterWardenAllocations('ALL')">All Allotments (<span id="count-alloc-ALL">0</span>)</button>
           <button id="subtab-alloc-MALE" class="subtab-btn" onclick="App.filterWardenAllocations('MALE')">👨 BOYS Hostels (<span id="count-alloc-MALE">0</span>)</button>
           <button id="subtab-alloc-FEMALE" class="subtab-btn" onclick="App.filterWardenAllocations('FEMALE')">👩 GIRLS Hostels (<span id="count-alloc-FEMALE">0</span>)</button>
+        </div>
+        <div class="table-search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-warden-alloc" placeholder="Search allotment, student, room..." oninput="App.searchWardenAllocations(this.value)">
         </div>
       </div>
 
@@ -189,6 +203,7 @@
           <tbody id="warden-alloc-tbody"></tbody>
         </table>
       </div>
+      <div id="pagination-alloc" class="pagination-container"></div>
     </div>
   </div>
 
@@ -205,11 +220,15 @@
         </div>
       </div>
 
-      <div style="margin-bottom:14px;">
+      <div class="table-toolbar">
         <div class="subtabs-nav" style="margin-bottom:0;">
           <button id="subtab-waitlist-ALL" class="subtab-btn active" onclick="App.filterWardenWaitlist('ALL')">All Waitlist (<span id="count-waitlist-ALL">0</span>)</button>
           <button id="subtab-waitlist-MALE" class="subtab-btn" onclick="App.filterWardenWaitlist('MALE')">👨 BOYS Waitlist (<span id="count-waitlist-MALE">0</span>)</button>
           <button id="subtab-waitlist-FEMALE" class="subtab-btn" onclick="App.filterWardenWaitlist('FEMALE')">👩 GIRLS Waitlist (<span id="count-waitlist-FEMALE">0</span>)</button>
+        </div>
+        <div class="table-search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-warden-waitlist" placeholder="Search waitlist, name, reason..." oninput="App.searchWardenWaitlist(this.value)">
         </div>
       </div>
 
@@ -230,6 +249,7 @@
           <tbody id="warden-waitlist-tbody"></tbody>
         </table>
       </div>
+      <div id="pagination-waitlist" class="pagination-container"></div>
     </div>
   </div>
 

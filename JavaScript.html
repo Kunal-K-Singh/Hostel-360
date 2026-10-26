@@ -1013,12 +1013,92 @@ var App = {
     }
   },
 
+  escapeHtml: function (str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  renderPaginationBar: function (containerId, currentPage, totalItems, pageSize, onPageChangeName) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (totalItems === 0) {
+      container.innerHTML = '<div class="pagination-info">Showing <strong>0</strong> of <strong>0</strong> entries</div>';
+      return;
+    }
+
+    var totalPages = Math.ceil(totalItems / pageSize) || 1;
+    var startItem = (currentPage - 1) * pageSize + 1;
+    var endItem = Math.min(currentPage * pageSize, totalItems);
+
+    var infoHtml = '<div class="pagination-info">' +
+      'Showing <strong>' + startItem + '</strong> to <strong>' + endItem + '</strong> of <strong>' + totalItems + '</strong> entries' +
+      '</div>';
+
+    var controlsHtml = '<div class="pagination-controls">';
+
+    var prevDisabled = currentPage <= 1 ? 'disabled' : '';
+    controlsHtml += '<button class="page-btn" ' + prevDisabled + ' onclick="' + onPageChangeName + '(' + (currentPage - 1) + ')" title="Previous Page">‹ Prev</button>';
+
+    var pages = [];
+    if (totalPages <= 7) {
+      for (var i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 4) {
+        pages = [1, 2, 3, 4, 5, '...', totalPages];
+      } else if (currentPage >= totalPages - 3) {
+        pages = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+      } else {
+        pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+      }
+    }
+
+    for (var j = 0; j < pages.length; j++) {
+      var p = pages[j];
+      if (p === '...') {
+        controlsHtml += '<span class="page-ellipsis">…</span>';
+      } else if (p === currentPage) {
+        controlsHtml += '<button class="page-btn active" disabled>' + p + '</button>';
+      } else {
+        controlsHtml += '<button class="page-btn" onclick="' + onPageChangeName + '(' + p + ')">' + p + '</button>';
+      }
+    }
+
+    var nextDisabled = currentPage >= totalPages ? 'disabled' : '';
+    controlsHtml += '<button class="page-btn" ' + nextDisabled + ' onclick="' + onPageChangeName + '(' + (currentPage + 1) + ')" title="Next Page">Next ›</button>';
+
+    controlsHtml += '</div>';
+
+    container.innerHTML = infoHtml + controlsHtml;
+  },
+
   currentAppsFilter: 'ALL',
-  currentAllocFilter: 'ALL',
-  currentWaitlistFilter: 'ALL',
+  currentAppsSearch: '',
+  currentAppsPage: 1,
+
+  searchWardenApplications: function (val) {
+    this.currentAppsSearch = val || '';
+    this.currentAppsPage = 1;
+    if (this.wardenData && this.wardenData.applications) {
+      this.renderWardenApplicationsTable(this.wardenData.applications);
+    }
+  },
+
+  setWardenAppsPage: function (page) {
+    this.currentAppsPage = page;
+    if (this.wardenData && this.wardenData.applications) {
+      this.renderWardenApplicationsTable(this.wardenData.applications);
+    }
+  },
 
   filterWardenApplications: function (filter) {
     this.currentAppsFilter = filter || 'ALL';
+    this.currentAppsPage = 1;
     ['ALL', 'MALE', 'FEMALE'].forEach(function (f) {
       var btn = document.getElementById('subtab-apps-' + f);
       if (btn) {
@@ -1033,6 +1113,7 @@ var App = {
 
   renderWardenApplicationsTable: function (applications) {
     var tbody = document.getElementById('warden-apps-tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     var list = applications || [];
 
@@ -1054,12 +1135,42 @@ var App = {
       filtered = list.filter(function (a) { return String(a.gender).toUpperCase() === 'FEMALE'; });
     }
 
-    if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">No student applications found for this selection.</td></tr>';
+    var query = (this.currentAppsSearch || '').trim().toLowerCase();
+    if (query) {
+      filtered = filtered.filter(function (a) {
+        var matchStr = [
+          a.applicationId || '',
+          a.name || '',
+          a.enrollmentNo || '',
+          a.studentId || '',
+          a.gender || '',
+          a.category || '',
+          a.priorityGroup || '',
+          a.eligibilityStatus || '',
+          a.distance != null ? a.distance + ' km' : ''
+        ].join(' ').toLowerCase();
+        return matchStr.indexOf(query) !== -1;
+      });
+    }
+
+    var totalItems = filtered.length;
+    var pageSize = 10;
+    var totalPages = Math.ceil(totalItems / pageSize) || 1;
+    if (this.currentAppsPage > totalPages) this.currentAppsPage = totalPages;
+    if (this.currentAppsPage < 1) this.currentAppsPage = 1;
+
+    if (totalItems === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">' +
+        (query ? 'No student applications matching "' + App.escapeHtml(query) + '".' : 'No student applications found for this selection.') +
+        '</td></tr>';
+      this.renderPaginationBar('pagination-apps', 1, 0, pageSize, 'App.setWardenAppsPage');
       return;
     }
 
-    filtered.forEach(function (a) {
+    var startIndex = (this.currentAppsPage - 1) * pageSize;
+    var pagedList = filtered.slice(startIndex, startIndex + pageSize);
+
+    pagedList.forEach(function (a) {
       var badge = '<span class="badge badge-warning">PENDING</span>';
       if (a.eligibilityStatus === 'ELIGIBLE') badge = '<span class="badge badge-success">ELIGIBLE</span>';
       else if (a.eligibilityStatus === 'INELIGIBLE') badge = '<span class="badge badge-danger">INELIGIBLE</span>';
@@ -1077,10 +1188,32 @@ var App = {
         '<td><button class="btn btn-sm btn-secondary" onclick="App.openVerifyDocsModal(\'' + a.applicationId + '\')">Docs (' + a.documentsCount + ')</button></td>';
       tbody.appendChild(tr);
     });
+
+    this.renderPaginationBar('pagination-apps', this.currentAppsPage, totalItems, pageSize, 'App.setWardenAppsPage');
+  },
+
+  currentAllocFilter: 'ALL',
+  currentAllocSearch: '',
+  currentAllocPage: 1,
+
+  searchWardenAllocations: function (val) {
+    this.currentAllocSearch = val || '';
+    this.currentAllocPage = 1;
+    if (this.wardenData && this.wardenData.allocations) {
+      this.renderWardenAllocationsTable(this.wardenData.allocations);
+    }
+  },
+
+  setWardenAllocPage: function (page) {
+    this.currentAllocPage = page;
+    if (this.wardenData && this.wardenData.allocations) {
+      this.renderWardenAllocationsTable(this.wardenData.allocations);
+    }
   },
 
   filterWardenAllocations: function (filter) {
     this.currentAllocFilter = filter || 'ALL';
+    this.currentAllocPage = 1;
     ['ALL', 'MALE', 'FEMALE'].forEach(function (f) {
       var btn = document.getElementById('subtab-alloc-' + f);
       if (btn) {
@@ -1095,6 +1228,7 @@ var App = {
 
   renderWardenAllocationsTable: function (allocations) {
     var tbody = document.getElementById('warden-alloc-tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     var list = allocations || [];
 
@@ -1124,12 +1258,45 @@ var App = {
       });
     }
 
-    if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-muted);">No room allotments found for this selection.</td></tr>';
+    var query = (this.currentAllocSearch || '').trim().toLowerCase();
+    if (query) {
+      filtered = filtered.filter(function (al) {
+        var matchStr = [
+          al.allocationId || '',
+          al.studentName || '',
+          al.studentId || '',
+          al.hostelName || '',
+          al.hostelId || '',
+          'room ' + (al.roomNumber || ''),
+          al.roomNumber || '',
+          al.priorityGroup || '',
+          al.category || '',
+          al.status || '',
+          al.registrationStatus || '',
+          al.gender || ''
+        ].join(' ').toLowerCase();
+        return matchStr.indexOf(query) !== -1;
+      });
+    }
+
+    var totalItems = filtered.length;
+    var pageSize = 10;
+    var totalPages = Math.ceil(totalItems / pageSize) || 1;
+    if (this.currentAllocPage > totalPages) this.currentAllocPage = totalPages;
+    if (this.currentAllocPage < 1) this.currentAllocPage = 1;
+
+    if (totalItems === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-muted);">' +
+        (query ? 'No room allotments matching "' + App.escapeHtml(query) + '".' : 'No room allotments found for this selection.') +
+        '</td></tr>';
+      this.renderPaginationBar('pagination-alloc', 1, 0, pageSize, 'App.setWardenAllocPage');
       return;
     }
 
-    filtered.forEach(function (al) {
+    var startIndex = (this.currentAllocPage - 1) * pageSize;
+    var pagedList = filtered.slice(startIndex, startIndex + pageSize);
+
+    pagedList.forEach(function (al) {
       var badge = '<span class="badge badge-info">' + al.status + '</span>';
       if (al.status === 'PUBLISHED') badge = '<span class="badge badge-success">PUBLISHED</span>';
       else if (al.status === 'CANCELLED') badge = '<span class="badge badge-danger">CANCELLED</span>';
@@ -1169,10 +1336,32 @@ var App = {
         '<td><button class="btn btn-sm btn-secondary" onclick="App.openOverrideModal(\'' + al.allocationId + '\', \'' + al.hostelId + '\')">Override</button></td>';
       tbody.appendChild(tr);
     });
+
+    this.renderPaginationBar('pagination-alloc', this.currentAllocPage, totalItems, pageSize, 'App.setWardenAllocPage');
+  },
+
+  currentWaitlistFilter: 'ALL',
+  currentWaitlistSearch: '',
+  currentWaitlistPage: 1,
+
+  searchWardenWaitlist: function (val) {
+    this.currentWaitlistSearch = val || '';
+    this.currentWaitlistPage = 1;
+    if (this.wardenData && this.wardenData.waitlist) {
+      this.renderWardenWaitlistTable(this.wardenData.waitlist);
+    }
+  },
+
+  setWardenWaitlistPage: function (page) {
+    this.currentWaitlistPage = page;
+    if (this.wardenData && this.wardenData.waitlist) {
+      this.renderWardenWaitlistTable(this.wardenData.waitlist);
+    }
   },
 
   filterWardenWaitlist: function (filter) {
     this.currentWaitlistFilter = filter || 'ALL';
+    this.currentWaitlistPage = 1;
     ['ALL', 'MALE', 'FEMALE'].forEach(function (f) {
       var btn = document.getElementById('subtab-waitlist-' + f);
       if (btn) {
@@ -1187,6 +1376,7 @@ var App = {
 
   renderWardenWaitlistTable: function (waitlist) {
     var tbody = document.getElementById('warden-waitlist-tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     var list = waitlist || [];
 
@@ -1208,16 +1398,46 @@ var App = {
       filtered = list.filter(function (w) { return String(w.gender).toUpperCase() === 'FEMALE'; });
     }
 
-    if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">No waitlisted students found for this selection.</td></tr>';
+    var query = (this.currentWaitlistSearch || '').trim().toLowerCase();
+    if (query) {
+      filtered = filtered.filter(function (w) {
+        var matchStr = [
+          w.waitlistId || '',
+          w.studentName || '',
+          w.studentId || '',
+          '#' + (w.position || ''),
+          w.gender || '',
+          w.category || '',
+          w.priorityGroup || '',
+          w.distance != null ? w.distance + ' km' : '',
+          w.reason || ''
+        ].join(' ').toLowerCase();
+        return matchStr.indexOf(query) !== -1;
+      });
+    }
+
+    var totalItems = filtered.length;
+    var pageSize = 10;
+    var totalPages = Math.ceil(totalItems / pageSize) || 1;
+    if (this.currentWaitlistPage > totalPages) this.currentWaitlistPage = totalPages;
+    if (this.currentWaitlistPage < 1) this.currentWaitlistPage = 1;
+
+    if (totalItems === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">' +
+        (query ? 'No waitlisted students matching "' + App.escapeHtml(query) + '".' : 'No waitlisted students found for this selection.') +
+        '</td></tr>';
+      this.renderPaginationBar('pagination-waitlist', 1, 0, pageSize, 'App.setWardenWaitlistPage');
       return;
     }
 
-    filtered.forEach(function (w, index) {
+    var startIndex = (this.currentWaitlistPage - 1) * pageSize;
+    var pagedList = filtered.slice(startIndex, startIndex + pageSize);
+
+    pagedList.forEach(function (w, index) {
       var genderText = (String(w.gender).toUpperCase() === 'MALE') ? 'Male' : 'Female';
 
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td><strong>#' + (w.position || (index + 1)) + '</strong></td>' +
+      tr.innerHTML = '<td><strong>#' + (w.position || (startIndex + index + 1)) + '</strong></td>' +
         '<td>' + w.waitlistId + '</td>' +
         '<td><strong>' + w.studentName + '</strong></td>' +
         '<td>' + genderText + '</td>' +
@@ -1227,6 +1447,8 @@ var App = {
         '<td><small>' + w.reason + '</small></td>';
       tbody.appendChild(tr);
     });
+
+    this.renderPaginationBar('pagination-waitlist', this.currentWaitlistPage, totalItems, pageSize, 'App.setWardenWaitlistPage');
   },
 
   renderWardenHostelsConfig: function (hostels, rooms) {
