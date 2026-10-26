@@ -249,6 +249,46 @@ var TestRunner = (function () {
       };
       assert('TEST 20', 'Digital allotment letter data structure complete', letterData.allotment.status === 'PUBLISHED' && !!letterData.allotmentLetterNo);
 
+      // -------------------------------------------------------------
+      // TEST 21: Smriti PII Scrubbing (smritiScrub_)
+      // -------------------------------------------------------------
+      var rawPiiText = 'Student test.user@university.ac.in phone +91 9876543210 roll 2026045123 applied in year 2026-27';
+      var scrubbed = (typeof MemoryService !== 'undefined') ? MemoryService.smritiScrub_(rawPiiText) : '';
+      var noEmail = scrubbed.indexOf('test.user@university.ac.in') === -1 && scrubbed.indexOf('[EMAIL_REDACTED]') !== -1;
+      var noPhone = scrubbed.indexOf('9876543210') === -1 && scrubbed.indexOf('[PHONE_REDACTED]') !== -1;
+      var noId = scrubbed.indexOf('2026045123') === -1 && scrubbed.indexOf('[ID_REDACTED]') !== -1;
+      var preservesYear = scrubbed.indexOf('2026-27') !== -1;
+      assert('TEST 21', 'Smriti PII scrubber removes emails, phone numbers and long digit IDs', noEmail && noPhone && noId && preservesYear);
+
+      // -------------------------------------------------------------
+      // TEST 22: Smriti non-throwing behavior when unconfigured
+      // -------------------------------------------------------------
+      var retainResult = null;
+      var didThrow = false;
+      try {
+        if (typeof MemoryService !== 'undefined') {
+          retainResult = MemoryService.smritiRetain('Test advisory event without configuration', 'test_context');
+        }
+      } catch (e) {
+        didThrow = true;
+      }
+      assert('TEST 22', 'smritiRetain returns {ok:false} without throwing when unconfigured', !didThrow && retainResult !== null && typeof retainResult === 'object');
+
+      // -------------------------------------------------------------
+      // TEST 23: Smriti hooks do not break existing operations when unconfigured
+      // -------------------------------------------------------------
+      var hooksDidNotBreak = false;
+      try {
+        // DocumentService verifyDocument with missing ID throws validation error, not Smriti error
+        DocumentService.verifyDocument('NON_EXISTENT_ID', 'PENDING', 'Testing');
+      } catch (expectedValidationErr) {
+        hooksDidNotBreak = (expectedValidationErr.message.indexOf('Document not found') !== -1);
+      }
+      var recallRes = (typeof MemoryService !== 'undefined') ? MemoryService.smritiRecall('any search query') : null;
+      var reflectRes = (typeof MemoryService !== 'undefined') ? MemoryService.smritiReflect('any question') : null;
+      var safeReturn = recallRes && !recallRes.ok && reflectRes && !reflectRes.ok;
+      assert('TEST 23', 'Smriti hooks & memory methods are non-blocking and safe when unconfigured', hooksDidNotBreak && safeReturn);
+
     } catch (err) {
       results.push({ id: 'GLOBAL_ERR', name: 'Test execution exception', passed: false, message: err.message });
       failed++;

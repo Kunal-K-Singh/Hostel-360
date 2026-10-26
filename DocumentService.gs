@@ -171,6 +171,19 @@ var DocumentService = (function () {
       'SUCCESS'
     );
 
+    // SMRITI ADVISORY HOOK: Retain document rejection
+    if (cleanStatus === 'REJECTED') {
+      try {
+        if (typeof MemoryService !== 'undefined' && MemoryService.smritiRetain) {
+          var yr = (typeof PolicyEngine !== 'undefined') ? PolicyEngine.getActiveAcademicYear().AcademicYear : '2026-27';
+          var docContent = 'In academic year ' + yr + ', document of type ' + (doc.DocumentType || 'DOCUMENT') + ' was rejected. Rejection reason: ' + (remarks || 'Document verification criteria not satisfied') + '.';
+          MemoryService.smritiRetain(docContent, 'document_rejection');
+        }
+      } catch (smritiErr) {
+        Logger.log('Smriti retain error (doc rejection): ' + smritiErr.message);
+      }
+    }
+
     return {
       documentId: documentId,
       status: cleanStatus,

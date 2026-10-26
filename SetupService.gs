@@ -636,12 +636,265 @@ var SetupService = (function () {
     return seedDefaultData();
   }
 
+  /**
+   * Seeds historical synthetic memory events into Hindsight memory bank for Smriti.
+   * Idempotent: checks Script Property SMRITI_HISTORY_SEEDED.
+   * Retains ~45 realistic synthetic events across academic years 2024-25 and 2025-26.
+   *
+   * @param {boolean} [force=false] - If true, bypasses idempotency check and re-seeds
+   * @returns {{ ok: boolean, count?: number, alreadySeeded?: boolean, error?: string }}
+   */
+  function seedSmritiHistory(force) {
+    var props = PropertiesService.getScriptProperties();
+    var isSeeded = props.getProperty('SMRITI_HISTORY_SEEDED');
+    if (!force && (isSeeded === 'true' || isSeeded === true)) {
+      Logger.log('Smriti history already seeded. Pass force=true to re-seed.');
+      return { ok: true, alreadySeeded: true, message: 'Smriti history already seeded.' };
+    }
+
+    if (typeof MemoryService === 'undefined' || !MemoryService.smritiRetainBatch) {
+      return { ok: false, error: 'MemoryService is not available.' };
+    }
+
+    var events = [
+      // --- PATTERN 1: DOMICILE CERTIFICATE REJECTIONS (ADDRESS MISMATCH) ---
+      {
+        content: 'In academic year 2024-25, document of type DOMICILE_CERTIFICATE was rejected. Rejection reason: Permanent address in application did not match the issuing authority district on the domicile certificate.',
+        context: 'document_rejection',
+        timestamp: '2024-08-14T10:15:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, document of type DOMICILE_CERTIFICATE was rejected. Rejection reason: Address mismatch between applicant declared residence in Delhi NCR and uploaded domicile certificate issued in Uttar Pradesh.',
+        context: 'document_rejection',
+        timestamp: '2024-08-20T11:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, document of type DOMICILE_CERTIFICATE was rejected. Rejection reason: Domicile certificate issued for ancestral village address outside state, conflicting with declared local permanent residence.',
+        context: 'document_rejection',
+        timestamp: '2024-08-28T14:45:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, document of type DOMICILE_CERTIFICATE was rejected. Rejection reason: Permanent address in application did not match the issuing authority district on the domicile certificate.',
+        context: 'document_rejection',
+        timestamp: '2025-08-15T09:40:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, document of type DOMICILE_CERTIFICATE was rejected. Rejection reason: Address mismatch: Domicile proof registered under maternal grandfather address with differing postal district.',
+        context: 'document_rejection',
+        timestamp: '2025-08-22T12:10:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, document of type DOMICILE_CERTIFICATE was rejected. Rejection reason: Permanent address declared in application form differed from village and tehsil stamped on state domicile certificate.',
+        context: 'document_rejection',
+        timestamp: '2025-08-29T15:20:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, document of type DOMICILE_CERTIFICATE was rejected. Rejection reason: Address mismatch between Aadhaar card copy and regional domicile certificate district jurisdiction.',
+        context: 'document_rejection',
+        timestamp: '2025-09-05T16:00:00.000Z'
+      },
+
+      // --- PATTERN 2: PwD OVERRIDES APPROVED FOR LATE MEDICAL CERTIFICATES ---
+      {
+        content: 'In academic year 2024-25, manual override approved for student in category PwD, priority Priority 1 - Divyangjan from hostel BH1 to BH1 Room 102. Reason: Student has 60% locomotor disability; civil hospital medical board certificate was delayed due to government hospital staff strike, verified genuine by University Medical Officer.',
+        context: 'manual_override',
+        timestamp: '2024-09-10T11:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, manual override approved for student in category PwD, priority Priority 1 - Divyangjan from hostel GH1 to GH1 Room 101. Reason: Late submission of disability certificate due to orthopedic surgery rehabilitation; warden approved ground floor single room placement on humanitarian grounds.',
+        context: 'manual_override',
+        timestamp: '2024-09-14T14:20:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, manual override approved for student in category PwD, priority Priority 1 - Divyangjan from hostel BH1 to BH1 Ground Floor Room 104. Reason: Student has severe mobility impairment; government medical board disability certificate was issued late due to civil hospital backlog, validated by university health centre.',
+        context: 'manual_override',
+        timestamp: '2025-09-12T10:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, manual override approved for student in category PwD, priority Priority 1 - Divyangjan from hostel GH2 to GH2 Room 103. Reason: Late medical board disability certificate renewal submitted with hospital verification slip; approved ground floor single room with ramp access.',
+        context: 'manual_override',
+        timestamp: '2025-09-16T15:10:00.000Z'
+      },
+
+      // --- PATTERN 3: RESERVED SEATS IN BH2 LAPSING AND RELEASED TO GENERAL ---
+      {
+        content: 'In academic year 2024-25, 3 unreported seat(s) in hostel BH2 lapsed due to non-reporting and unpaid fees within the institutional deadline for category ST.',
+        context: 'lapse_unreported',
+        timestamp: '2024-10-02T17:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, warden exercised quota release policy to transfer 3 lapsed ST seats in hostel BH2 to General pool after waitlist exhaustion.',
+        context: 'quota_release',
+        timestamp: '2024-10-05T11:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, 4 unreported seat(s) in hostel BH2 lapsed due to non-reporting and unpaid fees within the institutional deadline for category ST.',
+        context: 'lapse_unreported',
+        timestamp: '2025-10-04T17:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, warden released 4 vacant ST quota seats in hostel BH2 to General open merit pool following official notification and zero remaining ST waitlist applicants.',
+        context: 'quota_release',
+        timestamp: '2025-10-07T10:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, 2 unreported seat(s) in hostel BH2 lapsed due to unpaid fees within institutional deadline for category SC.',
+        context: 'lapse_unreported',
+        timestamp: '2025-10-12T18:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, warden released 2 vacant SC quota seats in hostel BH2 to General pool after all eligible waitlisted SC applicants were exhausted.',
+        context: 'quota_release',
+        timestamp: '2025-10-15T12:00:00.000Z'
+      },
+
+      // --- PATTERN 4: WAITLIST PROMOTIONS HAPPENING WITHIN 2-5 DAYS OF REPORTING DEADLINE ---
+      {
+        content: 'In academic year 2024-25, waitlist candidate in category GENERAL, priority Priority 4 - Distance-based was promoted from waitlist position #1 into newly vacant room in hostel BH1 following seat vacancy 3 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2024-10-03T09:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, waitlist candidate in category OBC-NCL, priority Priority 3 - Outstation was promoted from waitlist position #1 into newly vacant room in hostel GH1 following seat vacancy 2 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2024-10-04T10:15:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, waitlist candidate in category EWS, priority Priority 4 - Distance-based was promoted from waitlist position #2 into newly vacant room in hostel BH2 4 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2024-10-06T14:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, waitlist candidate in category GENERAL, priority Priority 4 - Distance-based was promoted from waitlist position #1 into newly vacant room in hostel BH1 following seat vacancy 2 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2025-10-05T09:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, waitlist candidate in category OBC-NCL, priority Priority 4 - Distance-based was promoted from waitlist position #1 into newly vacant room in hostel GH2 following seat vacancy 3 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2025-10-06T11:45:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, waitlist candidate in category GENERAL, priority Priority 3 - Outstation was promoted from waitlist position #2 into newly vacant room in hostel BH2 following seat vacancy 4 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2025-10-07T14:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, waitlist candidate in category EWS, priority Priority 4 - Distance-based was promoted from waitlist position #3 into newly vacant room in hostel BH1 5 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2025-10-08T16:00:00.000Z'
+      },
+
+      // --- ALLOCATION RUNS & OFFICIAL PUBLICATIONS ---
+      {
+        content: 'In academic year 2024-25, allocation run completed in DRAFT mode with 60 allotments (GENERAL: 30, OBC-NCL: 16, SC: 9, ST: 5) and 25 waitlisted applicants. 4 single rooms remain vacant.',
+        context: 'allocation_run',
+        timestamp: '2024-09-01T10:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, officially published 60 allocations and 25 waitlist entries. All 12 validation rules passed with zero warnings.',
+        context: 'allocation_published',
+        timestamp: '2024-09-03T16:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, allocation run completed in DRAFT mode with 68 allotments (GENERAL: 34, OBC-NCL: 18, SC: 10, ST: 6) and 32 waitlisted applicants. 2 single rooms remain vacant.',
+        context: 'allocation_run',
+        timestamp: '2025-09-01T10:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, officially published 68 allocations and 32 waitlist entries. Validator warnings: Single room occupancy verified; zero quota cross-allocation.',
+        context: 'allocation_published',
+        timestamp: '2025-09-03T17:00:00.000Z'
+      },
+
+      // --- OTHER PROCEDURAL PRECEDENTS ---
+      {
+        content: 'In academic year 2024-25, document of type INCOME_CERTIFICATE was rejected. Rejection reason: Gross family annual income exceeded 8 Lakh INR ceiling for EWS reservation tier.',
+        context: 'document_rejection',
+        timestamp: '2024-08-18T11:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, document of type INCOME_CERTIFICATE was rejected. Rejection reason: Income certificate presented had expired prior to application opening date.',
+        context: 'document_rejection',
+        timestamp: '2025-08-19T14:15:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, manual override approved for student in category GENERAL, priority Priority 4 - Distance-based from hostel BH2 to BH1 Room 208. Reason: Student sustained knee ligament tear in university athletic trials, shifted to lower floor room with lift access.',
+        context: 'manual_override',
+        timestamp: '2024-10-18T11:45:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, manual override approved for student in category OBC-NCL, priority Priority 3 - Outstation from hostel GH1 to GH2 Room 215. Reason: Severe water seepage in GH1 Room 310 due to roof monsoon damage; shifted student to dry available room in GH2.',
+        context: 'manual_override',
+        timestamp: '2025-09-24T16:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, 2 unreported seat(s) in hostel GH1 lapsed due to non-reporting and unpaid fees within institutional deadline for category GENERAL.',
+        context: 'lapse_unreported',
+        timestamp: '2024-10-02T17:15:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, 1 unreported seat(s) in hostel GH2 lapsed due to non-reporting and unpaid fees within institutional deadline for category EWS.',
+        context: 'lapse_unreported',
+        timestamp: '2025-10-04T17:45:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, document of type PWD_CERTIFICATE was rejected. Rejection reason: Assessed permanent physical disability was below mandatory statutory 40% benchmark.',
+        context: 'document_rejection',
+        timestamp: '2024-08-25T13:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, document of type PWD_CERTIFICATE was rejected. Rejection reason: Submitted temporary disability slip from private clinic instead of statutory district medical board certificate.',
+        context: 'document_rejection',
+        timestamp: '2025-08-27T10:50:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, manual override approved for student in category SC, priority Priority 2 - Outstation from hostel BH1 to BH2 Room 106. Reason: Mutual room exchange request with consent due to same academic department research lab shift.',
+        context: 'manual_override',
+        timestamp: '2024-10-22T15:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, manual override approved for student in category GENERAL, priority Priority 1 - Divyangjan from hostel BH2 to BH2 Room 101. Reason: Visually impaired student placed in closest ground floor room adjacent to hostel entrance gate for safe mobility.',
+        context: 'manual_override',
+        timestamp: '2025-09-08T12:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, warden exercised quota release policy to transfer 1 lapsed EWS seat in hostel GH2 to General waitlist candidate following verification cutoff.',
+        context: 'quota_release',
+        timestamp: '2025-10-08T11:00:00.000Z'
+      },
+      {
+        content: 'In academic year 2024-25, waitlist candidate in category GENERAL, priority Priority 4 - Distance-based was promoted from waitlist position #3 into newly vacant room in hostel BH1 5 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2024-10-07T12:30:00.000Z'
+      },
+      {
+        content: 'In academic year 2025-26, waitlist candidate in category SC, priority Priority 3 - Outstation was promoted from waitlist position #1 into newly vacant room in hostel BH2 following seat vacancy 3 days after reporting deadline.',
+        context: 'waitlist_promotion',
+        timestamp: '2025-10-06T15:30:00.000Z'
+      }
+    ];
+
+    Logger.log('Seeding ' + events.length + ' historical synthetic memory events for Smriti...');
+    var res = MemoryService.smritiRetainBatch(events);
+
+    if (res.ok) {
+      props.setProperty('SMRITI_HISTORY_SEEDED', 'true');
+      Logger.log('Smriti historical memory seeding completed successfully (' + res.count + ' events retained).');
+    } else {
+      Logger.log('Smriti historical memory seeding encountered issues: ' + res.error);
+    }
+
+    return res;
+  }
+
   return {
     setupHostel360: setupHostel360,
     initializeDatabase: initializeDatabase,
     seedDefaultData: seedDefaultData,
     resetAndSeedLargeDataset: resetAndSeedLargeDataset,
-    cleanMobileFormulaErrors: cleanMobileFormulaErrors
+    cleanMobileFormulaErrors: cleanMobileFormulaErrors,
+    seedSmritiHistory: seedSmritiHistory
   };
 })();
 
@@ -650,6 +903,13 @@ var SetupService = (function () {
  */
 function setupHostel360() {
   return SetupService.setupHostel360();
+}
+
+/**
+ * Global function callable from Apps Script Editor to seed historical synthetic Smriti memory
+ */
+function seedSmritiHistory(force) {
+  return SetupService.seedSmritiHistory(force);
 }
 
 /**

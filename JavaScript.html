@@ -1751,7 +1751,39 @@ var App = {
     hostSelect.value = currentHostelId;
     this.updateOverrideRoomsList(currentHostelId);
     document.getElementById('override-reason').value = '';
+    this.loadSmritiOverridePrecedents(alloc, currentHostelId);
     this.openModal('modal-override');
+  },
+
+  loadSmritiOverridePrecedents: function (alloc, currentHostelId) {
+    var container = document.getElementById('smriti-override-cases');
+    if (!container) return;
+    container.innerHTML = '<div style="display:flex; align-items:center; gap:8px;"><span class="spinner" style="width:14px; height:14px; border-width:2px;"></span> Recalling historical precedents...</div>';
+
+    var ctx = {
+      category: alloc ? alloc.category : '',
+      priorityGroup: alloc ? alloc.priorityGroup : '',
+      toHostel: currentHostelId || (alloc ? alloc.hostelId : '')
+    };
+
+    this.callServer('apiSmritiSuggestForOverride', this.token, ctx)
+      .then(function (res) {
+        if (!res || !res.cases || !res.cases.length) {
+          container.innerHTML = '<div style="color:var(--text-muted); font-style:italic;">' +
+            ((res && res.notice) ? res.notice : 'No matching historical override precedents found in institutional memory.') +
+            '</div>';
+          return;
+        }
+
+        var html = '';
+        res.cases.forEach(function (c) {
+          html += '<div class="smriti-case-item">• ' + App.escapeHtml(c.content) + '</div>';
+        });
+        container.innerHTML = html;
+      })
+      .catch(function () {
+        container.innerHTML = '<div style="color:var(--text-muted); font-style:italic;">Smriti advisory memory is currently offline.</div>';
+      });
   },
 
   onOverrideActionChange: function (actionType) {
@@ -2483,6 +2515,105 @@ var App = {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
       }, 300);
     }, duration || 4000);
+  },
+
+  // ============================================================
+  // SMRITI ADVISORY INSTITUTIONAL MEMORY CONTROLLER
+  // ============================================================
+
+  askSmritiFromChip: function (question) {
+    var input = document.getElementById('smriti-chat-input');
+    if (input) input.value = question;
+    this.submitSmritiQuestion();
+  },
+
+  submitSmritiQuestion: function () {
+    var input = document.getElementById('smriti-chat-input');
+    var sendBtn = document.getElementById('btn-smriti-send');
+    var sendLabel = document.getElementById('smriti-send-label');
+    var sendSpinner = document.getElementById('smriti-send-spinner');
+    var errBanner = document.getElementById('smriti-error-banner');
+    var history = document.getElementById('smriti-chat-history');
+
+    if (!input || !history) return;
+    var question = (input.value || '').trim();
+    if (!question) return;
+
+    if (errBanner) errBanner.style.display = 'none';
+
+    // 1. Append User Message
+    var userMsgHtml = '<div class="smriti-msg smriti-msg-user">' +
+      '<div class="smriti-avatar">👤</div>' +
+      '<div class="smriti-bubble">' + App.escapeHtml(question) + '</div>' +
+      '</div>';
+    history.innerHTML += userMsgHtml;
+    input.value = '';
+
+    // 2. Append Pending Assistant Bubble
+    var tempMsgId = 'smriti-loading-' + Date.now();
+    var pendingMsgHtml = '<div id="' + tempMsgId + '" class="smriti-msg smriti-msg-assistant">' +
+      '<div class="smriti-avatar">🧠</div>' +
+      '<div class="smriti-bubble" style="display:flex; align-items:center; gap:8px;">' +
+      '<span class="spinner" style="width:14px; height:14px; border-width:2px;"></span> Reflecting over institutional memory...' +
+      '</div></div>';
+    history.innerHTML += pendingMsgHtml;
+    history.scrollTop = history.scrollHeight;
+
+    if (sendBtn) sendBtn.disabled = true;
+    if (sendSpinner) sendSpinner.style.display = 'inline-block';
+    if (sendLabel) sendLabel.textContent = 'Thinking...';
+
+    var self = this;
+    this.callServer('apiSmritiAsk', this.token, question)
+      .then(function (res) {
+        if (sendBtn) sendBtn.disabled = false;
+        if (sendSpinner) sendSpinner.style.display = 'none';
+        if (sendLabel) sendLabel.textContent = 'Ask Smriti';
+
+        var tempEl = document.getElementById(tempMsgId);
+        var answer = (res && res.answer) ? res.answer : 'No answer returned from institutional memory.';
+        if (tempEl) {
+          tempEl.innerHTML = '<div class="smriti-avatar">🧠</div>' +
+            '<div class="smriti-bubble">' + App.escapeHtml(answer) + '</div>';
+        }
+        history.scrollTop = history.scrollHeight;
+      })
+      .catch(function () {
+        if (sendBtn) sendBtn.disabled = false;
+        if (sendSpinner) sendSpinner.style.display = 'none';
+        if (sendLabel) sendLabel.textContent = 'Ask Smriti';
+
+        var tempEl = document.getElementById(tempMsgId);
+        var friendlyErr = 'Smriti is currently unconfigured or operating in offline mode. Please configure Hindsight API credentials via smritiSetConfig() to enable AI-powered institutional recall.';
+        if (tempEl) {
+          tempEl.innerHTML = '<div class="smriti-avatar">🧠</div>' +
+            '<div class="smriti-bubble" style="color:var(--text-muted); font-style:italic;">' + App.escapeHtml(friendlyErr) + '</div>';
+        }
+        history.scrollTop = history.scrollHeight;
+      });
+  },
+
+  loadSmritiPrePublishBriefing: function () {
+    var card = document.getElementById('smriti-prepublish-card');
+    var content = document.getElementById('smriti-briefing-content');
+    if (!card || !content) return;
+
+    card.style.display = 'block';
+    content.innerHTML = '<div style="display:flex; align-items:center; gap:8px;"><span class="spinner" style="width:14px; height:14px; border-width:2px;"></span> Synthesizing historical cycle warnings and waitlist trends...</div>';
+
+    this.callServer('apiSmritiPrePublishBriefing', this.token)
+      .then(function (res) {
+        var briefing = (res && res.briefing) ? res.briefing : 'Smriti advisory memory is offline.';
+        content.innerHTML = App.escapeHtml(briefing);
+      })
+      .catch(function () {
+        content.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">Smriti briefing unavailable (offline mode). Allocation engine validation remains fully verified.</span>';
+      });
+  },
+
+  dismissSmritiBriefing: function () {
+    var card = document.getElementById('smriti-prepublish-card');
+    if (card) card.style.display = 'none';
   },
 
   showLoading: function (msg) {

@@ -82,6 +82,9 @@ Every academic semester, thousands of outstation students navigate uncertainty w
 7. **Zero-Trust Security & Salted SHA-256 Hashing**  
    Passwords hashed with unique 32-character cryptographic salts. Ephemeral session tokens stored in `CacheService` (6-hour TTL). Strict Role-Based Access Control (RBAC) validated server-side.
 
+8. **Smriti: Advisory Institutional Memory (Hindsight Powered)**  
+   Advisory semantic memory layer powered by Hindsight agent memory (Vectorize). Recalls historical administrative precedents during manual overrides, synthesizes pre-publish briefings, and provides conversational memory over past allocation cycles while strictly isolating deterministic allocation rules.
+
 ---
 
 ## 🏛️ System Architecture
@@ -243,7 +246,41 @@ Execute `runHostel360RegressionTests()` inside the Apps Script Editor to run the
 [TEST 18] Password plaintext check -> Salted SHA-256 hash verified   [PASS]
 [TEST 19] Student self-payment verification -> Denied                [PASS]
 [TEST 20] Digital allotment letter generation -> Verified            [PASS]
+[TEST 21] Smriti PII scrubber removes emails, phone numbers & IDs   [PASS]
+[TEST 22] smritiRetain returns {ok:false} when unconfigured         [PASS]
+[TEST 23] Smriti hooks & memory methods safe and non-blocking       [PASS]
 ```
+
+---
+
+## 🧠 Smriti (Hindsight Memory)
+
+**Smriti** is an advisory institutional memory layer for university hostel administration powered by the **Hindsight agent memory platform (Vectorize)**.
+
+### Core Architecture & Flow
+```
+Warden Action (Audit/Override/Promote/Publish)
+       │
+       ▼ (Non-blocking async hook)
+MemoryService.gs (PII Redaction via smritiScrub_)
+       │
+       ▼ (REST API: POST /v1/default/banks/{bank_id}/memories)
+Hindsight Cloud Memory Bank (Vectorize)
+       │
+       ├─► Recall (/memories/recall)  ──► Similar Past Cases Panel in Override Modal
+       └─► Reflect (/reflect)         ──► Smriti Chat & Pre-Publish Cycle Briefing
+```
+
+### Functional Scope
+- **Advisory Only**: Smriti never makes, alters, or blocks an allocation. Allocation remains 100% deterministic and rule-based.
+- **Fail-Safe & Non-Blocking**: All Smriti calls are wrapped in `try / catch`. If Hindsight is offline, unconfigured, or times out, the system operates identically as before.
+- **Strict Privacy**: PII is scrubbed client- and server-side. Student names, emails, phone numbers, enrollment numbers, and document files are never transmitted. Events are described using reservation category, priority tier, hostel code, and justification reason only.
+- **Precedent Discovery**:
+  - **Smriti Chat Tab**: Natural language querying across historical cycle decisions (e.g., *"Why were domicile certificates rejected last year?"*).
+  - **Manual Override Precedents**: Automatically suggests up to 3 similar historical override cases when the warden opens the override form.
+  - **Pre-Publish Advisory Briefing**: Synthesizes cautionary patterns from earlier cycles before official publication.
+
+For comprehensive architectural specifications, memory hook locations, and verification instructions, see [docs/SMRITI.md](docs/SMRITI.md).
 
 ---
 

@@ -72,6 +72,7 @@
     <button id="btn-tab-reservations" class="tab-btn" onclick="App.switchWardenTab('reservations')">⚖️ Reservation & Quotas</button>
     <button id="btn-tab-payments" class="tab-btn" onclick="App.switchWardenTab('payments')">💳 Fee Payments</button>
     <button id="btn-tab-reports" class="tab-btn" onclick="App.switchWardenTab('reports')">📑 Reports & Audit</button>
+    <button id="btn-tab-smriti" class="tab-btn" onclick="App.switchWardenTab('smriti')">🧠 Smriti Memory</button>
   </div>
 
   <!-- TAB 1: OVERVIEW & ANALYTICS CHARTS -->
@@ -166,10 +167,27 @@
           <div class="card-subtitle">Manage allocations, reclaim lapsed unpaid seats, and promote waitlisted applicants</div>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <button class="btn btn-sm btn-outline-primary" onclick="App.loadSmritiPrePublishBriefing()">🧠 Smriti Briefing</button>
           <button class="btn btn-sm btn-outline-danger" onclick="App.lapseUnreportedAllocations()">⏰ Lapse Unreported Seats</button>
           <button class="btn btn-sm btn-outline-success" onclick="App.promoteWaitlistCandidates()">⚡ Promote Waitlist</button>
           <button class="btn btn-sm btn-secondary" onclick="App.validateAllocations()">🔍 Run Validator</button>
           <button class="btn btn-sm btn-primary" onclick="App.publishAllocations()">🚀 Publish All</button>
+        </div>
+      </div>
+
+      <!-- Smriti Pre-Publish Advisory Briefing Card (Dismissible) -->
+      <div id="smriti-prepublish-card" class="smriti-briefing-box" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+          <div>
+            <div style="font-size:13px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+              <span>🧠</span> Smriti Pre-Publish Advisory Briefing
+              <span class="badge badge-warning" style="font-size:10px; margin-left:6px;">Advisory only. Allocation is rule-based.</span>
+            </div>
+            <div id="smriti-briefing-content" style="font-size:12px; color:var(--text-main); line-height:1.5;">
+              Synthesizing historical patterns and cycle warnings...
+            </div>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="App.dismissSmritiBriefing()" title="Dismiss briefing" style="padding:2px 8px; font-size:12px;">✕</button>
         </div>
       </div>
 
@@ -370,6 +388,68 @@
         <button class="btn btn-secondary" onclick="App.downloadReportCsv('AUDIT')">🛡️ Full Audit Trail</button>
       </div>
     </div>
+  <!-- TAB 9: SMRITI ADVISORY INSTITUTIONAL MEMORY -->
+  <div id="w-tab-smriti" class="tab-pane warden-tab">
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+        <div>
+          <div class="card-title">
+            <span>🧠 Smriti: Institutional Memory</span>
+            <span class="badge badge-info" style="font-size:11px; font-weight:600;">Hindsight Agent Memory</span>
+          </div>
+          <div class="card-subtitle">
+            Semantic historical memory recalling administrative precedents, verification policies, and cycle trends across past academic years.
+          </div>
+        </div>
+        <div>
+          <span class="badge badge-warning" style="font-size:11px; padding:6px 12px; letter-spacing:0.3px;">
+            ⚠️ Advisory only. Allocation is rule-based.
+          </span>
+        </div>
+      </div>
+
+      <!-- Example Question Chips -->
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">
+          Suggested Precedent Queries:
+        </div>
+        <div class="smriti-chips-container">
+          <button class="smriti-chip" onclick="App.askSmritiFromChip('Why were domicile certificates rejected last year?')">
+            📑 Why were domicile certificates rejected last year?
+          </button>
+          <button class="smriti-chip" onclick="App.askSmritiFromChip('What were the common reasons for PwD manual overrides?')">
+            ♿ What were the common reasons for PwD manual overrides?
+          </button>
+          <button class="smriti-chip" onclick="App.askSmritiFromChip('Which reserved category seats lapsed and were released in previous cycles?')">
+            ⚖️ Which reserved category seats lapsed and were released in previous cycles?
+          </button>
+        </div>
+      </div>
+
+      <!-- Chat History Box -->
+      <div id="smriti-chat-history" class="smriti-chat-box">
+        <div class="smriti-msg smriti-msg-assistant">
+          <div class="smriti-avatar">🧠</div>
+          <div class="smriti-bubble">
+            <strong>Welcome to Smriti.</strong> I am your advisory institutional memory assistant powered by Hindsight agent memory.
+            I can recall past manual override justifications, document rejection patterns, waitlist promotion timelines, and quota release precedents from previous allocation cycles.
+            <div style="margin-top: 6px; font-size: 11px; opacity: 0.8;">
+              <em>Note: All memory retrieval is strictly advisory. Allocation engine decisions remain 100% deterministic and rule-governed.</em>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input Area -->
+      <div class="smriti-input-bar">
+        <input type="text" id="smriti-chat-input" class="form-control" placeholder="Ask an advisory institutional memory question (e.g., past override reasons, document precedents)..." onkeydown="if(event.key==='Enter') App.submitSmritiQuestion()">
+        <button id="btn-smriti-send" class="btn btn-primary" onclick="App.submitSmritiQuestion()" style="display:inline-flex; align-items:center; gap:6px;">
+          <span id="smriti-send-label">Ask Smriti</span>
+          <span id="smriti-send-spinner" class="spinner" style="display:none; width:14px; height:14px; border-width:2px; border-top-color:#ffffff;"></span>
+        </button>
+      </div>
+      <div id="smriti-error-banner" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(239,68,68,0.1); border:1px solid var(--danger); border-radius:6px; color:var(--danger); font-size:12px;"></div>
+    </div>
   </div>
 
 </div>
@@ -427,6 +507,19 @@
         <p style="font-size:12px; color:var(--text-main); margin:0; line-height:1.5;">
           This action will officially cancel the student's room allotment, release their assigned single room immediately back into the available pool, and notify the student.
         </p>
+      </div>
+
+      <!-- Smriti Similar Past Cases Panel -->
+      <div id="smriti-override-panel" class="smriti-advisory-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong style="font-size:12px; color:var(--text-main); display:flex; align-items:center; gap:6px;">
+            <span>🧠</span> Similar Past Cases (Smriti Memory)
+          </strong>
+          <span class="badge badge-warning" style="font-size:10px;">Advisory only. Allocation is rule-based.</span>
+        </div>
+        <div id="smriti-override-cases" style="font-size:12px; color:var(--text-muted); line-height:1.4;">
+          Loading relevant precedents...
+        </div>
       </div>
 
       <div class="form-group">

@@ -1108,3 +1108,148 @@ function apiResetAndSeed120Applicants(token) {
   });
 }
 
+// ============================================================
+// SMRITI ADVISORY INSTITUTIONAL MEMORY APIS (WARDEN ONLY)
+// ============================================================
+
+/**
+ * Reflects over institutional memory to answer a warden inquiry.
+ * Advisory only. Never influences or blocks allocation decisions.
+ */
+function apiSmritiAsk(token, question) {
+  return apiResponse(function () {
+    AuthService.requireRole(token, 'WARDEN');
+    if (!question || !String(question).trim()) {
+      throw new Error('Question cannot be empty.');
+    }
+
+    try {
+      var res = MemoryService.smritiReflect(question, 'Warden Institutional Query');
+      if (!res.ok) {
+        return {
+          answer: 'Smriti is currently unconfigured or operating in offline mode. Please configure Hindsight credentials (HINDSIGHT_API_KEY and HINDSIGHT_BANK_ID) via smritiSetConfig() to enable memory reflection.',
+          isConfigured: false
+        };
+      }
+      return {
+        answer: res.answer || 'No relevant precedents or institutional memory records found for this question.',
+        isConfigured: true
+      };
+    } catch (err) {
+      Logger.log('apiSmritiAsk error: ' + err.message);
+      return {
+        answer: 'Institutional memory service encountered a transient error: ' + err.message,
+        isConfigured: false
+      };
+    }
+  });
+}
+function smritiAsk(token, question) {
+  return apiSmritiAsk(token, question);
+}
+
+/**
+ * Recalls similar past manual override precedents for the target candidate.
+ * Returns up to 3 short cases. Advisory only.
+ */
+function apiSmritiSuggestForOverride(token, ctx) {
+  return apiResponse(function () {
+    AuthService.requireRole(token, 'WARDEN');
+    var contextObj = ctx || {};
+
+    try {
+      var category = contextObj.category || 'GENERAL';
+      var priority = contextObj.priorityGroup || '';
+      var hostel = contextObj.toHostel || contextObj.hostelId || '';
+      var query = 'manual override category ' + category + ' priority ' + priority + ' hostel ' + hostel;
+
+      var res = MemoryService.smritiRecall(query);
+      if (!res.ok || !res.items || !res.items.length) {
+        return {
+          cases: [],
+          notice: res.error ? 'Smriti advisory memory is unconfigured or offline.' : 'No matching historical override precedents found.'
+        };
+      }
+
+      var formattedCases = [];
+      for (var i = 0; i < res.items.length && formattedCases.length < 3; i++) {
+        var it = res.items[i];
+        var text = (typeof it === 'string') ? it : (it.content || it.text || it.memory || JSON.stringify(it));
+        if (text && text.trim().length > 10) {
+          formattedCases.push({
+            content: text,
+            context: it.context || 'manual_override',
+            timestamp: it.timestamp || ''
+          });
+        }
+      }
+
+      return {
+        cases: formattedCases,
+        notice: formattedCases.length ? null : 'No matching historical override precedents found.'
+      };
+    } catch (err) {
+      Logger.log('apiSmritiSuggestForOverride error: ' + err.message);
+      return {
+        cases: [],
+        notice: 'Smriti memory lookup error: ' + err.message
+      };
+    }
+  });
+}
+function smritiSuggestForOverride(token, ctx) {
+  return apiSmritiSuggestForOverride(token, ctx);
+}
+
+/**
+ * Synthesizes a pre-publication briefing on patterns/cautions from earlier cycles.
+ * Advisory only.
+ */
+function apiSmritiPrePublishBriefing(token) {
+  return apiResponse(function () {
+    AuthService.requireRole(token, 'WARDEN');
+
+    try {
+      var activeYearObj = PolicyEngine.getActiveAcademicYear();
+      var yearStr = activeYearObj ? activeYearObj.AcademicYear : '2026-27';
+
+      var drafts = SheetRepository.findRecords(SheetRepository.SHEETS.ALLOCATIONS, function (a) {
+        return a.AcademicYear === yearStr && (a.Status === 'DRAFT' || a.Status === 'REVIEW');
+      });
+
+      var waitlist = SheetRepository.findRecords(SheetRepository.SHEETS.WAITLIST, function (w) {
+        return w.AcademicYear === yearStr && w.Status === 'ACTIVE';
+      });
+
+      var summaryContext = 'Cycle ' + yearStr + ': ' + drafts.length + ' draft allotments pending publication, ' + waitlist.length + ' waitlisted applicants.';
+      var query = 'What patterns, pitfalls, or seat forfeiture trends from earlier allocation cycles should the warden watch before publishing hostel allocations?';
+
+      var res = MemoryService.smritiReflect(query, summaryContext);
+      if (!res.ok) {
+        return {
+          briefing: 'Smriti advisory memory is unconfigured or offline. You can proceed with publication—all deterministic checks remain fully guarded by the 12-point allocation validator.',
+          isConfigured: false,
+          draftCount: drafts.length,
+          waitlistCount: waitlist.length
+        };
+      }
+
+      return {
+        briefing: res.answer || 'All previous cycle guidelines appear satisfied. Please review validator warnings if any.',
+        isConfigured: true,
+        draftCount: drafts.length,
+        waitlistCount: waitlist.length
+      };
+    } catch (err) {
+      Logger.log('apiSmritiPrePublishBriefing error: ' + err.message);
+      return {
+        briefing: 'Smriti briefing unavailable: ' + err.message,
+        isConfigured: false
+      };
+    }
+  });
+}
+function smritiPrePublishBriefing(token) {
+  return apiSmritiPrePublishBriefing(token);
+}
+

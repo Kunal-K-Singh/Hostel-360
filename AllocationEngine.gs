@@ -123,6 +123,26 @@ var AllocationEngine = (function () {
       'SUCCESS'
     );
 
+    // SMRITI ADVISORY HOOK: Retain allocation run summary
+    try {
+      if (typeof MemoryService !== 'undefined' && MemoryService.smritiRetain) {
+        var catCounts = {};
+        for (var ta = 0; ta < totalDraftAllocations.length; ta++) {
+          var c = totalDraftAllocations[ta].ReservationCategory || 'GENERAL';
+          catCounts[c] = (catCounts[c] || 0) + 1;
+        }
+        var catSummaryParts = [];
+        for (var ck in catCounts) catSummaryParts.push(ck + ': ' + catCounts[ck]);
+        var catSummary = catSummaryParts.join(', ') || 'None';
+        var remainingVacant = Math.max(0, allRooms.length - totalDraftAllocations.length);
+
+        var runContent = 'In academic year ' + yearStr + ', allocation run completed in DRAFT mode with ' + totalDraftAllocations.length + ' allotments (' + catSummary + ') and ' + totalDraftWaitlist.length + ' waitlisted applicants. ' + remainingVacant + ' single rooms remain vacant.';
+        MemoryService.smritiRetain(runContent, 'allocation_run');
+      }
+    } catch (smritiErr) {
+      Logger.log('Smriti retain error (run): ' + smritiErr.message);
+    }
+
     return {
       academicYear: yearStr,
       status: 'DRAFT',
@@ -457,6 +477,19 @@ var AllocationEngine = (function () {
       'SUCCESS'
     );
 
+    // SMRITI ADVISORY HOOK: Retain official publication event with validator state
+    try {
+      if (typeof MemoryService !== 'undefined' && MemoryService.smritiRetain) {
+        var warnText = (validation && validation.warnings && validation.warnings.length > 0)
+          ? 'Validator warnings: ' + validation.warnings.join('; ')
+          : 'All 12 validation rules passed with zero warnings';
+        var pubContent = 'In academic year ' + yearStr + ', officially published ' + drafts.length + ' allocations and ' + waitlistRecords.length + ' waitlist entries. ' + warnText + '.';
+        MemoryService.smritiRetain(pubContent, 'allocation_published');
+      }
+    } catch (smritiErr) {
+      Logger.log('Smriti retain error (publish): ' + smritiErr.message);
+    }
+
     return {
       academicYear: yearStr,
       publishedAllocationsCount: drafts.length,
@@ -537,6 +570,17 @@ var AllocationEngine = (function () {
       reason,
       'SUCCESS'
     );
+
+    // SMRITI ADVISORY HOOK: Retain manual override precedent
+    try {
+      if (typeof MemoryService !== 'undefined' && MemoryService.smritiRetain) {
+        var yr = alloc.AcademicYear || (typeof PolicyEngine !== 'undefined' ? PolicyEngine.getActiveAcademicYear().AcademicYear : '2026-27');
+        var overrideContent = 'In academic year ' + yr + ', manual override approved for student in category ' + (alloc.ReservationCategory || alloc.Category || 'GENERAL') + ', priority ' + (alloc.PriorityGroup || 'Standard') + ' from hostel ' + alloc.HostelID + ' to ' + newHostelId + '. Reason: ' + reason;
+        MemoryService.smritiRetain(overrideContent, 'manual_override');
+      }
+    } catch (smritiErr) {
+      Logger.log('Smriti retain error (override): ' + smritiErr.message);
+    }
 
     return {
       allocationId: allocationId,
@@ -764,6 +808,25 @@ var AllocationEngine = (function () {
       }
     }
 
+    // SMRITI ADVISORY HOOK: Retain seat forfeiture and lapse patterns
+    if (lapsedAllocations.length > 0) {
+      try {
+        if (typeof MemoryService !== 'undefined' && MemoryService.smritiRetain) {
+          var lapsesByHostel = {};
+          for (var lp = 0; lp < lapsedAllocations.length; lp++) {
+            var hId = lapsedAllocations[lp].hostelId || 'UNKNOWN';
+            lapsesByHostel[hId] = (lapsesByHostel[hId] || 0) + 1;
+          }
+          for (var hostKey in lapsesByHostel) {
+            var lapseContent = 'In academic year ' + yearStr + ', ' + lapsesByHostel[hostKey] + ' unreported seat(s) in hostel ' + hostKey + ' lapsed due to non-reporting and unpaid fees within the institutional deadline, and were released back to the vacancy pool.';
+            MemoryService.smritiRetain(lapseContent, 'lapse_unreported');
+          }
+        }
+      } catch (smritiErr) {
+        Logger.log('Smriti retain error (lapse): ' + smritiErr.message);
+      }
+    }
+
     return {
       academicYear: yearStr,
       lapsedCount: lapsedAllocations.length,
@@ -911,6 +974,16 @@ var AllocationEngine = (function () {
           explanation,
           'SUCCESS'
         );
+
+        // SMRITI ADVISORY HOOK: Retain waitlist promotion event
+        try {
+          if (typeof MemoryService !== 'undefined' && MemoryService.smritiRetain) {
+            var promoContent = 'In academic year ' + yearStr + ', waitlist candidate in category ' + (student.Category || 'GENERAL') + ', priority ' + wl.PriorityGroup + ' was promoted from waitlist position #' + wl.WaitlistPosition + ' into newly vacant room in hostel ' + matchedHostel.HostelID + ' following seat vacancy.';
+            MemoryService.smritiRetain(promoContent, 'waitlist_promotion');
+          }
+        } catch (smritiErr) {
+          Logger.log('Smriti retain error (waitlist promo): ' + smritiErr.message);
+        }
       }
     }
 
