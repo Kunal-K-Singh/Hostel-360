@@ -256,6 +256,21 @@ var App = {
 
     // 2. Timeline Step Rendering (8 Stages)
     var step = data.analytics ? data.analytics.timelineStep : 1;
+
+    // Check if all required documents for this student are verified:
+    var requiredDocList = data.requiredDocs || data.mandatoryDocs || [];
+    if (data.documents && requiredDocList.length > 0) {
+      var dMap = {};
+      data.documents.forEach(function (d) { dMap[d.DocumentType] = d; });
+      var allVerified = requiredDocList.every(function (dt) {
+        return dMap[dt] && String(dMap[dt].VerificationStatus).toUpperCase() === 'VERIFIED';
+      });
+      // If all required documents are verified, Step 3 (Doc Verification) MUST show completed (✓)
+      if (allVerified && step < 4) {
+        step = 4; // Moves active step to 4 (Allocation), so Step 1, 2, 3 show green ticks ✓
+      }
+    }
+
     var steps = document.querySelectorAll('#student-timeline .timeline-step');
     steps.forEach(function (el, idx) {
       var stepNum = idx + 1;
@@ -379,7 +394,7 @@ var App = {
     }
 
     // 5. Render Documents List
-    this.renderStudentDocumentsTable(data.documents, data.mandatoryDocs);
+    this.renderStudentDocumentsTable(data.documents, data.requiredDocs || data.mandatoryDocs, data.student);
 
     // 6. Render Payments List & Dynamic Lock/Unlock state
     var isRoomAllocated = (data.allocation && data.allocation.status === 'PUBLISHED');
@@ -470,14 +485,53 @@ var App = {
     }
   },
 
-  renderStudentDocumentsTable: function (documents, mandatoryDocs) {
+  getDocumentDisplayName: function (dt) {
+    var labels = {
+      'ADMISSION_FEE_RECEIPT': 'ADMISSION FEE RECEIPT',
+      'MEDICAL_FITNESS': 'MEDICAL FITNESS',
+      'PERMANENT_ADDRESS_PROOF': 'PERMANENT ADDRESS PROOF',
+      'PARENT_UNDERTAKING': 'PARENT UNDERTAKING',
+      'STUDENT_UNDERTAKING': 'STUDENT UNDERTAKING',
+      'SC_CERTIFICATE': 'SC CASTE CERTIFICATE',
+      'ST_CERTIFICATE': 'ST TRIBE CERTIFICATE',
+      'OBC_NCL_CERTIFICATE': 'OBC NCL CERTIFICATE',
+      'EWS_CERTIFICATE': 'EWS INCOME & ASSET CERTIFICATE',
+      'PWD_CERTIFICATE': 'PWD CERTIFICATE',
+      'PASSPORT_AND_VISA': 'PASSPORT & VISA',
+      'PARENT_POSTING_CERTIFICATE': 'PARENT POSTING OUTSIDE NCR'
+    };
+    return labels[dt] || dt.replace(/_/g, ' ');
+  },
+
+  renderStudentDocumentsTable: function (documents, requiredDocs, student) {
     var tbody = document.getElementById('stu-docs-tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     var docMap = {};
     (documents || []).forEach(function (d) { docMap[d.DocumentType] = d; });
 
-    var allTypes = (mandatoryDocs || []).concat(['PWD_CERTIFICATE']);
+    // Determine category-specific required documents strictly per Hostel Brochure
+    var allTypes = [];
+    if (requiredDocs && requiredDocs.length > 0) {
+      allTypes = requiredDocs.slice();
+    } else {
+      allTypes = ['ADMISSION_FEE_RECEIPT', 'MEDICAL_FITNESS', 'PERMANENT_ADDRESS_PROOF', 'PARENT_UNDERTAKING', 'STUDENT_UNDERTAKING'];
+      if (student) {
+        var cat = String(student.Category || '').toUpperCase().trim();
+        var isPwd = (student.IsPwD === true || student.IsPwD === 'true' || student.IsPwD === 'YES' || cat === 'PWD');
+        var isForeign = (cat === 'FOREIGN' || (student.Nationality && String(student.Nationality).toUpperCase().trim() !== 'INDIAN'));
+        var isParentOutside = (student.IsParentPostedOutsideNCR === true || student.IsParentPostedOutsideNCR === 'true' || student.IsParentPostedOutsideNCR === 'YES');
+        if (isPwd) allTypes.push('PWD_CERTIFICATE');
+        if (cat === 'SC') allTypes.push('SC_CERTIFICATE');
+        if (cat === 'ST') allTypes.push('ST_CERTIFICATE');
+        if (cat === 'OBC') allTypes.push('OBC_NCL_CERTIFICATE');
+        if (cat === 'EWS') allTypes.push('EWS_CERTIFICATE');
+        if (isForeign) allTypes.push('PASSPORT_AND_VISA');
+        if (isParentOutside) allTypes.push('PARENT_POSTING_CERTIFICATE');
+      }
+    }
 
+    var self = this;
     allTypes.forEach(function (dt) {
       var doc = docMap[dt];
       var statusBadge = '<span class="badge badge-secondary">NOT UPLOADED</span>';
@@ -494,8 +548,10 @@ var App = {
       var uploadInput = '<input type="file" id="upload_' + dt + '" style="display:none;" onchange="App.handleDocumentUpload(this, \'' + dt + '\')">' +
         '<button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById(\'upload_' + dt + '\').click()">' + (doc ? 'Re-upload' : 'Upload') + '</button>';
 
+      var displayName = self.getDocumentDisplayName(dt);
+
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td><strong>' + dt.replace(/_/g, ' ') + '</strong></td>' +
+      tr.innerHTML = '<td><strong>' + displayName + '</strong></td>' +
         '<td>' + statusBadge + '</td>' +
         '<td>' + (doc ? (doc.Remarks || 'Uploaded') : 'Mandatory') + '</td>' +
         '<td style="display:flex; gap:8px;">' + actionBtn + uploadInput + '</td>';

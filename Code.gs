@@ -149,7 +149,7 @@ function apiGetStudentDashboard(token) {
     });
 
     var analytics = AnalyticsService.getStudentAnalytics(studentId);
-    var mandatoryDocs = PolicyEngine.getMandatoryDocuments();
+    var requiredDocs = PolicyEngine.getRequiredDocumentsForStudent ? PolicyEngine.getRequiredDocumentsForStudent(student) : PolicyEngine.getMandatoryDocuments();
     var feeAmount = PolicyEngine.getPolicyValue('HOSTEL_FEE_AMOUNT', 35000);
 
     var allocData = null;
@@ -186,7 +186,8 @@ function apiGetStudentDashboard(token) {
       windowStatus: windowStatus,
       application: application,
       documents: documents,
-      mandatoryDocs: mandatoryDocs,
+      mandatoryDocs: requiredDocs,
+      requiredDocs: requiredDocs,
       payments: payments,
       feeAmount: feeAmount,
       allocation: allocData,

@@ -58,8 +58,8 @@ var EligibilityEngine = (function () {
       reasons.push('No active ' + (gender === 'MALE' ? 'Boys' : 'Girls') + ' hostels configured.');
     }
 
-    // 5. Mandatory Documents Check
-    var mandatoryDocs = PolicyEngine.getMandatoryDocuments();
+    // 5. Category-Specific Mandatory Documents Check (Brochure Compliance)
+    var requiredDocs = PolicyEngine.getRequiredDocumentsForStudent ? PolicyEngine.getRequiredDocumentsForStudent(student) : PolicyEngine.getMandatoryDocuments();
     var docs = documents || DocumentService.getStudentDocuments(student.StudentID);
     var uploadedDocTypes = {};
     var verifiedDocTypes = {};
@@ -89,12 +89,12 @@ var EligibilityEngine = (function () {
       }
     }
 
-    // Check Rejected Mandatory Documents
-    for (var m = 0; m < mandatoryDocs.length; m++) {
-      var mType = mandatoryDocs[m];
+    // Check Rejected Mandatory Category Documents
+    for (var m = 0; m < requiredDocs.length; m++) {
+      var mType = requiredDocs[m];
       if (rejectedDocTypes[mType]) {
         isEligible = false;
-        reasons.push('Mandatory document "' + mType + '" was rejected during warden verification.');
+        reasons.push('Required document "' + mType.replace(/_/g, ' ') + '" was rejected during warden verification.');
       }
     }
 

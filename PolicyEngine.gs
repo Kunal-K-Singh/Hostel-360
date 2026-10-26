@@ -124,11 +124,145 @@ var PolicyEngine = (function () {
   }
 
   /**
-   * Gets list of mandatory document types
+   * Official Hostel Admission Brochure Document Specifications & Category Mapping
+   */
+  var DOCUMENT_DEFINITIONS = {
+    ADMISSION_FEE_RECEIPT: {
+      key: 'ADMISSION_FEE_RECEIPT',
+      label: 'ADMISSION FEE RECEIPT',
+      category: 'ALL',
+      description: 'Proof of university admission / academic fee receipt for current academic year.'
+    },
+    MEDICAL_FITNESS: {
+      key: 'MEDICAL_FITNESS',
+      label: 'MEDICAL FITNESS',
+      category: 'ALL',
+      description: 'Medical fitness certificate issued and signed by a Registered Medical Practitioner (MBBS).'
+    },
+    PERMANENT_ADDRESS_PROOF: {
+      key: 'PERMANENT_ADDRESS_PROOF',
+      label: 'PERMANENT ADDRESS PROOF',
+      category: 'ALL',
+      description: 'Proof of permanent residence outside Delhi-NCR (Domicile / Electricity Bill / Aadhaar / Passport).'
+    },
+    PARENT_UNDERTAKING: {
+      key: 'PARENT_UNDERTAKING',
+      label: 'PARENT UNDERTAKING',
+      category: 'ALL',
+      description: 'Signed undertaking from parent/guardian agreeing to hostel rules & anti-ragging policies.'
+    },
+    STUDENT_UNDERTAKING: {
+      key: 'STUDENT_UNDERTAKING',
+      label: 'STUDENT UNDERTAKING',
+      category: 'ALL',
+      description: 'Signed anti-ragging & hostel discipline code of conduct undertaking by the student.'
+    },
+    SC_CERTIFICATE: {
+      key: 'SC_CERTIFICATE',
+      label: 'SC CASTE CERTIFICATE',
+      category: 'SC',
+      description: 'Official Scheduled Caste certificate issued by competent authority (SDM / Tehsildar).'
+    },
+    ST_CERTIFICATE: {
+      key: 'ST_CERTIFICATE',
+      label: 'ST TRIBE CERTIFICATE',
+      category: 'ST',
+      description: 'Official Scheduled Tribe certificate issued by competent authority (SDM / Tehsildar).'
+    },
+    OBC_NCL_CERTIFICATE: {
+      key: 'OBC_NCL_CERTIFICATE',
+      label: 'OBC NCL CERTIFICATE',
+      category: 'OBC',
+      description: 'OBC Non-Creamy Layer certificate issued for the current financial year.'
+    },
+    EWS_CERTIFICATE: {
+      key: 'EWS_CERTIFICATE',
+      label: 'EWS INCOME & ASSET CERTIFICATE',
+      category: 'EWS',
+      description: 'Economically Weaker Section (EWS) certificate issued by authorized revenue officer.'
+    },
+    PWD_CERTIFICATE: {
+      key: 'PWD_CERTIFICATE',
+      label: 'PWD CERTIFICATE',
+      category: 'PWD',
+      description: 'Medical certificate of permanent disability (min. 40%) issued by a Government Medical Board.'
+    },
+    PASSPORT_AND_VISA: {
+      key: 'PASSPORT_AND_VISA',
+      label: 'PASSPORT & VISA',
+      category: 'FOREIGN',
+      description: 'Valid international passport, valid Indian student visa and FRRO registration certificate.'
+    },
+    PARENT_POSTING_CERTIFICATE: {
+      key: 'PARENT_POSTING_CERTIFICATE',
+      label: 'PARENT POSTING OUTSIDE NCR',
+      category: 'GROUP_4',
+      description: 'Official posting/transfer letter certifying parent is posted outside Delhi-NCR (Priority Group 4).'
+    }
+  };
+
+  /**
+   * Retrieves specific list of required documents for a student strictly as per Hostel Brochure
+   * based on category, disability status, nationality, and parent posting.
+   */
+  function getRequiredDocumentsForStudent(student) {
+    var docs = [
+      'ADMISSION_FEE_RECEIPT',
+      'MEDICAL_FITNESS',
+      'PERMANENT_ADDRESS_PROOF',
+      'PARENT_UNDERTAKING',
+      'STUDENT_UNDERTAKING'
+    ];
+    if (!student) return docs;
+
+    var cat = String(student.Category || '').toUpperCase().trim();
+    var isPwd = student.IsPwD === true || student.IsPwD === 'true' || student.IsPwD === 'YES' || cat === 'PWD';
+    var isForeign = cat === 'FOREIGN' || (student.Nationality && String(student.Nationality).toUpperCase().trim() !== 'INDIAN');
+    var isParentOutside = student.IsParentPostedOutsideNCR === true || student.IsParentPostedOutsideNCR === 'true' || student.IsParentPostedOutsideNCR === 'YES';
+
+    if (isPwd && docs.indexOf('PWD_CERTIFICATE') === -1) {
+      docs.push('PWD_CERTIFICATE');
+    }
+    if (cat === 'SC' && docs.indexOf('SC_CERTIFICATE') === -1) {
+      docs.push('SC_CERTIFICATE');
+    }
+    if (cat === 'ST' && docs.indexOf('ST_CERTIFICATE') === -1) {
+      docs.push('ST_CERTIFICATE');
+    }
+    if (cat === 'OBC' && docs.indexOf('OBC_NCL_CERTIFICATE') === -1) {
+      docs.push('OBC_NCL_CERTIFICATE');
+    }
+    if (cat === 'EWS' && docs.indexOf('EWS_CERTIFICATE') === -1) {
+      docs.push('EWS_CERTIFICATE');
+    }
+    if (isForeign && docs.indexOf('PASSPORT_AND_VISA') === -1) {
+      docs.push('PASSPORT_AND_VISA');
+    }
+    if (isParentOutside && docs.indexOf('PARENT_POSTING_CERTIFICATE') === -1) {
+      docs.push('PARENT_POSTING_CERTIFICATE');
+    }
+
+    return docs;
+  }
+
+  /**
+   * Gets list of universal baseline mandatory document types
    */
   function getMandatoryDocuments() {
-    var raw = getPolicyValue('MANDATORY_DOCUMENTS', 'ADMISSION_FEE_RECEIPT,MEDICAL_FITNESS,PERMANENT_ADDRESS_PROOF,PARENT_UNDERTAKING,STUDENT_UNDERTAKING');
-    return String(raw).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    return [
+      'ADMISSION_FEE_RECEIPT',
+      'MEDICAL_FITNESS',
+      'PERMANENT_ADDRESS_PROOF',
+      'PARENT_UNDERTAKING',
+      'STUDENT_UNDERTAKING'
+    ];
+  }
+
+  /**
+   * Gets definitions dictionary
+   */
+  function getDocumentDefinitions() {
+    return DOCUMENT_DEFINITIONS;
   }
 
   /**
@@ -153,6 +287,8 @@ var PolicyEngine = (function () {
     getPolicyValue: getPolicyValue,
     setPolicyValue: setPolicyValue,
     getMandatoryDocuments: getMandatoryDocuments,
+    getRequiredDocumentsForStudent: getRequiredDocumentsForStudent,
+    getDocumentDefinitions: getDocumentDefinitions,
     getForeignStudentQuotaPct: getForeignStudentQuotaPct,
     getFeePaymentDeadlineDays: getFeePaymentDeadlineDays
   };

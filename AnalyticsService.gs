@@ -19,7 +19,8 @@ var AnalyticsService = (function () {
     })[0];
 
     var documents = DocumentService.getStudentDocuments(studentId);
-    var mandatoryDocs = PolicyEngine.getMandatoryDocuments();
+    var requiredDocs = PolicyEngine.getRequiredDocumentsForStudent ? PolicyEngine.getRequiredDocumentsForStudent(student) : PolicyEngine.getMandatoryDocuments();
+    var mandatoryDocs = requiredDocs;
     var payments = PaymentService.getStudentPayments(studentId);
     var allAllocations = SheetRepository.findRecords(SheetRepository.SHEETS.ALLOCATIONS, function (a) {
       return String(a.StudentID) === String(studentId) && String(a.AcademicYear) === String(activeYear.AcademicYear);
@@ -31,7 +32,8 @@ var AnalyticsService = (function () {
       return String(w.StudentID) === String(studentId) && String(w.AcademicYear) === String(activeYear.AcademicYear) && w.Status === 'ACTIVE';
     })[0];
 
-    // Compute Document Completion
+    // Compute Document Completion based on category-specific requirements
+    var docMap = {};
     var uploadedTypes = {};
     var verifiedCount = 0;
     var pendingCount = 0;
@@ -39,19 +41,28 @@ var AnalyticsService = (function () {
 
     for (var d = 0; d < documents.length; d++) {
       var doc = documents[d];
-      uploadedTypes[doc.DocumentType] = true;
+      var dtype = String(doc.DocumentType).trim();
+      uploadedTypes[dtype] = true;
+      docMap[dtype] = doc;
       var st = String(doc.VerificationStatus).toUpperCase();
       if (st === 'VERIFIED') verifiedCount++;
       else if (st === 'PENDING') pendingCount++;
       else if (st === 'REJECTED') rejectedCount++;
     }
 
-    var mandatoryUploadedCount = 0;
-    for (var m = 0; m < mandatoryDocs.length; m++) {
-      if (uploadedTypes[mandatoryDocs[m]]) mandatoryUploadedCount++;
+    var requiredUploadedCount = 0;
+    var requiredVerifiedCount = 0;
+    for (var m = 0; m < requiredDocs.length; m++) {
+      var rType = requiredDocs[m];
+      if (uploadedTypes[rType]) requiredUploadedCount++;
+      var docItem = docMap[rType];
+      if (docItem && String(docItem.VerificationStatus).toUpperCase() === 'VERIFIED') {
+        requiredVerifiedCount++;
+      }
     }
 
-    var docCompletionPct = mandatoryDocs.length > 0 ? Math.round((mandatoryUploadedCount / mandatoryDocs.length) * 100) : 100;
+    var docCompletionPct = requiredDocs.length > 0 ? Math.round((requiredUploadedCount / requiredDocs.length) * 100) : 100;
+    var allRequiredDocsVerified = (requiredDocs.length > 0 && requiredVerifiedCount === requiredDocs.length && rejectedCount === 0);
 
     // Compute Profile & Application Completion
     var appCompletionPct = 0;
@@ -59,23 +70,28 @@ var AnalyticsService = (function () {
     if (application) appCompletionPct += 30;
     if (docCompletionPct === 100) appCompletionPct += 30;
 
-    // Determine Timeline Step (1 to 8)
-    // 1: Submitted
-    // 2: Eligibility Check
-    // 3: Document Verification
-    // 4: Allocation Processing (Draft)
-    // 5: Warden Review (Review Mode)
-    // 6: Allocation Published
-    // 7: Fee Payment (Deposit & Transaction Submission)
-    // 8: Physical Registration & Key Handover (Awaiting Warden Offline Confirmation)
-    // 9: Registration & Room Possession Complete (All 8 Stages Finished)
+    // Determine Timeline Step (1 to 8):
+    // 1: Submitted (Initial application state)
+    // 2: Eligibility Check (Applicant eligibility in review)
+    // 3: Document Verification (Awaiting document audit by Warden)
+    // 4: Allocation Processing (All documents verified! Step 3 completed with green checkmark ✓)
+    // 5: Warden Review (Draft matrix under review)
+    // 6: Allocation Published (Allotments finalized)
+    // 7: Fee Payment (Deposit & DD transaction submission active)
+    // 8: Physical Registration & Key Handover (Fee verified, offline check-in pending)
+    // 9: Registration & Room Possession Complete (All 8 stages finished with green checkmarks ✓)
     var timelineStep = 1;
     if (application) {
       timelineStep = 1;
-      if (application.EligibilityStatus === 'ELIGIBLE') {
+      if (application.EligibilityStatus === 'ELIGIBLE' || application.Status === 'SUBMITTED' || application.Status === 'VERIFIED') {
         timelineStep = 2;
-        if (verifiedCount >= mandatoryDocs.length) {
+        if (application.EligibilityStatus === 'ELIGIBLE') {
+          // Documents under review by Warden
           timelineStep = 3;
+          // When all category-required documents are audited and marked VERIFIED, Step 3 is completed!
+          if (allRequiredDocsVerified) {
+            timelineStep = 4; // Step 1, 2, 3 show green checkmarks (✓), Step 4 Allocation is active!
+          }
         }
       }
       if (draftAllocation) {
@@ -133,9 +149,12 @@ var AnalyticsService = (function () {
       docCompletionPct: docCompletionPct,
       timelineStep: timelineStep,
       documentStats: {
-        totalMandatory: mandatoryDocs.length,
+        totalMandatory: requiredDocs.length,
+        requiredDocs: requiredDocs,
         uploadedCount: Object.keys(uploadedTypes).length,
         verifiedCount: verifiedCount,
+        requiredVerifiedCount: requiredVerifiedCount,
+        allRequiredDocsVerified: allRequiredDocsVerified,
         pendingCount: pendingCount,
         rejectedCount: rejectedCount
       },

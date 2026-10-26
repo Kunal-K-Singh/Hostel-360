@@ -593,9 +593,15 @@ var SetupService = (function () {
         UpdatedAt: nowIso
       });
 
-      // 5 Mandatory Verified Documents
+      // Category-Specific Verified Documents strictly complying with Hostel Brochure norms
       var docTypes = ['ADMISSION_FEE_RECEIPT', 'MEDICAL_FITNESS', 'PERMANENT_ADDRESS_PROOF', 'PARENT_UNDERTAKING', 'STUDENT_UNDERTAKING'];
       if (isPwd) docTypes.push('PWD_CERTIFICATE');
+      if (chosenCat === 'SC') docTypes.push('SC_CERTIFICATE');
+      if (chosenCat === 'ST') docTypes.push('ST_CERTIFICATE');
+      if (chosenCat === 'OBC') docTypes.push('OBC_NCL_CERTIFICATE');
+      if (chosenCat === 'EWS') docTypes.push('EWS_CERTIFICATE');
+      if (isForeign) docTypes.push('PASSPORT_AND_VISA');
+      if (pGroup === 'GROUP_4') docTypes.push('PARENT_POSTING_CERTIFICATE');
 
       for (var d = 0; d < docTypes.length; d++) {
         docsBatch.push({
