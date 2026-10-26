@@ -83,7 +83,7 @@ Every academic semester, thousands of outstation students navigate uncertainty w
    Passwords hashed with unique 32-character cryptographic salts. Ephemeral session tokens stored in `CacheService` (6-hour TTL). Strict Role-Based Access Control (RBAC) validated server-side.
 
 8. **Smriti: Advisory Institutional Memory (Hindsight Powered)**  
-   Advisory semantic memory layer powered by Hindsight agent memory (Vectorize). Recalls historical administrative precedents during manual overrides, synthesizes pre-publish briefings, and provides conversational memory over past allocation cycles while strictly isolating deterministic allocation rules.
+   Advisory semantic memory layer powered by Hindsight agent memory (Vectorize). Recalls historical administrative precedents during manual overrides, synthesizes pre-publish briefings, and provides a modern LLM chat interface with rich markdown rendering, suggested precedent queries, and answer citations over past allocation cycles while strictly isolating deterministic allocation rules.
 
 ---
 
@@ -91,53 +91,84 @@ Every academic semester, thousands of outstation students navigate uncertainty w
 
 ```mermaid
 flowchart TD
-    subgraph Client["Client Layer (Single Page Application)"]
-        UI["Index.html / Styles.html"]
-        SL["StudentLogin.html"]
-        WL["WardenLogin.html"]
-        SD["StudentDashboard.html"]
-        WD["WardenDashboard.html"]
-        JS["JavaScript.html (State & API Dispatcher)"]
+    subgraph Client ["Client Layer (Single Page Application)"]
+        UI["Index.html & Styles.html (Shell & Theme Engine)"]
+        SL["StudentLogin.html (Applicant Auth)"]
+        WL["WardenLogin.html (Admin Auth)"]
+        SD["StudentDashboard.html (Status, Payment, Allotment Pass)"]
+        WD["WardenDashboard.html (Warden Console & Smriti LLM Chat)"]
+        JS["JavaScript.html (State Machine, RPC & Markdown Engine)"]
     end
 
-    subgraph Backend["Google Apps Script V8 Engine"]
+    subgraph Backend ["Google Apps Script V8 Engine"]
         ROUTER["Code.gs (Router & Session Gate)"]
         AUTH["AuthService.gs & SessionService.gs"]
-        ALLOC["AllocationEngine.gs (Batch Processor)"]
-        VALID["AllocationValidator.gs (12-Point Audit)"]
-        RESERV["ReservationEngine.gs & PriorityEngine.gs"]
-        DIST["DistanceService.gs (Routes API v2)"]
-        NOTIF["NotificationService.gs (Dual-Dispatch)"]
-        AUDIT["AuditService.gs (Immutable Log)"]
+        
+        subgraph DeterministicCore ["Deterministic Allocation Core"]
+            ALLOC["AllocationEngine.gs (4-Phase Batch Allocator)"]
+            VALID["AllocationValidator.gs (12-Point Audit)"]
+            RESERV["ReservationEngine.gs & PriorityEngine.gs"]
+            DIST["DistanceService.gs (Routes API v2)"]
+            EXPLAN["ExplanationEngine.gs (Audit Transparency)"]
+        end
+
+        subgraph ERPServices ["ERP Lifecycle Services"]
+            DOC["DocumentService.gs (Verification & Audit)"]
+            PAY["PaymentService.gs (DD Reconciliation)"]
+            NOTIF["NotificationService.gs (Dual-Dispatch)"]
+            AUDIT["AuditService.gs (Immutable Log)"]
+            REP["ReportService.gs (CSV Exports)"]
+        end
+
+        subgraph AdvisoryAI ["Advisory Institutional Memory"]
+            MEM["MemoryService.gs (Smriti PII Scrubber & REST Client)"]
+        end
     end
 
-    subgraph Database["Google Cloud Infrastructure ($0 Cost)"]
-        SHEETS[("Google Sheets Relational DB\n(17 Normalized Tables)")]
+    subgraph Infrastructure ["Infrastructure & External Cloud Services ($0 Host Cost)"]
+        SHEETS[("Google Sheets Relational DB\n(17 Normalized Tables via SheetRepository)")]
         DRIVE[("Google Drive\n(Document Repository)")]
         MAIL["Google MailApp / GmailApp"]
         CACHE["Google Apps Script CacheService"]
+        HINDSIGHT[("Hindsight Agent Memory API\n(Vectorize Cloud Memory Bank)")]
     end
 
+    %% Client Interactions
     UI --> JS
     SL --> JS
     WL --> JS
     SD --> JS
     WD --> JS
-    JS -->|google.script.run| ROUTER
+    JS -->|"google.script.run"| ROUTER
 
+    %% Backend Routing
     ROUTER --> AUTH
     AUTH --> CACHE
     ROUTER --> ALLOC
     ALLOC --> RESERV
     ALLOC --> DIST
     ALLOC --> VALID
-    ALLOC --> NOTIF
-    ROUTER --> AUDIT
+    ALLOC --> EXPLAN
 
+    ROUTER --> DOC
+    ROUTER --> PAY
+    ROUTER --> NOTIF
+    ROUTER --> AUDIT
+    ROUTER --> REP
+    ROUTER --> MEM
+
+    %% Advisory Decoupled Hooks
+    ALLOC -.->|"Override / Promotion Precedents"| MEM
+    DOC -.->|"Rejection Pattern Precedents"| MEM
+    MEM <-->|"Scrubbed JSON / REST API"| HINDSIGHT
+
+    %% Persistence Connections
     AUTH --> SHEETS
     ALLOC --> SHEETS
+    DOC --> DRIVE
+    DOC --> SHEETS
+    PAY --> SHEETS
     AUDIT --> SHEETS
-    ROUTER --> DRIVE
     NOTIF --> MAIL
 ```
 
@@ -275,10 +306,11 @@ Hindsight Cloud Memory Bank (Vectorize)
 - **Advisory Only**: Smriti never makes, alters, or blocks an allocation. Allocation remains 100% deterministic and rule-based.
 - **Fail-Safe & Non-Blocking**: All Smriti calls are wrapped in `try / catch`. If Hindsight is offline, unconfigured, or times out, the system operates identically as before.
 - **Strict Privacy**: PII is scrubbed client- and server-side. Student names, emails, phone numbers, enrollment numbers, and document files are never transmitted. Events are described using reservation category, priority tier, hostel code, and justification reason only.
-- **Precedent Discovery**:
-  - **Smriti Chat Tab**: Natural language querying across historical cycle decisions (e.g., *"Why were domicile certificates rejected last year?"*).
+- **Precedent Discovery & Generative AI Interface**:
+  - **Modern LLM Chat Interface**: Conversational query feed featuring rich Markdown parsing (`App.renderMarkdown()`), 3-dot pulsing reflection animation, one-click answer copying, and precedent citation source tags across earlier academic years (e.g., *"Why were domicile certificates rejected last year?"*).
+  - **Contextual Precedent Chips**: Suggested precedent queries positioned directly above the prompt input capsule for immediate access.
   - **Manual Override Precedents**: Automatically suggests up to 3 similar historical override cases when the warden opens the override form.
-  - **Pre-Publish Advisory Briefing**: Synthesizes cautionary patterns from earlier cycles before official publication.
+  - **Pre-Publish Advisory Briefing**: Synthesizes cautionary patterns and waitlist conversion trends from earlier cycles before official publication.
 
 For comprehensive architectural specifications, memory hook locations, and verification instructions, see [docs/SMRITI.md](docs/SMRITI.md).
 
